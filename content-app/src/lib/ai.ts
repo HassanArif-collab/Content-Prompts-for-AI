@@ -21,7 +21,7 @@ export interface AiSettings {
 }
 
 const DEFAULT_SETTINGS: AiSettings = {
-  provider: 'zai',
+  provider: 'ollama',  // Ollama is the default — no cloud dependency
   ollamaUrl: 'http://localhost:11434',
   ollamaModel: 'llama3.1',
   browsingEnabled: true,
