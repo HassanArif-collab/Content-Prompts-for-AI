@@ -9,8 +9,26 @@ The Documentary Studio app runs on the user's Windows 11 PC. It has:
 - An AI co-pilot (Ollama local, or ZAI cloud in sandbox)
 - Browser automation tools (Dreamina, Google Flow via Edge CDP)
 - A Visual Plans review tab where the user approves/feedbacks
+- A prompts library (served via /api/prompts)
 
 You (the AI agent in any chat) connect to it via a Cloudflare tunnel URL the user gives you.
+
+## Repository Structure
+
+```
+Content-Prompts-for-AI/
+├── prompts/                    ← Canonical prompts (GitHub source of truth)
+│   ├── script-v5/
+│   ├── visual-v7-glm/
+│   └── ...
+└── content-app/                ← The Documentary Studio app
+    ├── src/                    ← App source
+    ├── tools/                  ← Browser automation (inside the app)
+    ├── prompts/                ← Copy of canonical prompts (served via /api/prompts)
+    └── ...
+```
+
+The app has its own copy of the prompts at `content-app/prompts/`. When you call `/api/prompts/<folder>/<file>`, the app reads from its local copy. You don't need to worry about the GitHub repo structure — just use the API.
 
 ## The connection checklist
 
@@ -32,6 +50,7 @@ You (the AI agent in any chat) connect to it via a Cloudflare tunnel URL the use
 4. **Push max once per phase** — don't spam the app
 5. **Wait for the user's feedback in chat** after pushing a plan for review
 6. **Read prompt files via the API** — don't guess what they contain
+7. **Tools live inside the app** — you know about them through the guide, but you never run them directly
 
 ## API endpoints
 
@@ -41,32 +60,36 @@ You (the AI agent in any chat) connect to it via a Cloudflare tunnel URL the use
 | `/api/projects` | GET | List all projects |
 | `/api/projects/<id>` | GET | Get one project with all data |
 | `/api/projects/<id>/script` | GET | Get script sections (always fetch fresh) |
-| `/api/projects/<id>/research` | GET | Get research notes (hierarchical tree) |
-| `/api/projects/<id>/research` | POST | Add research topic or child link |
-| `/api/projects/<id>/sources` | GET | Get source library |
-| `/api/projects/<id>/sources` | POST | Add a source |
-| `/api/projects/<id>/visual-plans` | GET | List visual plans |
-| `/api/projects/<id>/visual-plans` | POST | Create a visual plan |
-| `/api/visual-plans/<planId>` | GET | Get one plan |
-| `/api/visual-plans/<planId>` | PATCH | Update plan (shots, status, code, feedback) |
-| `/api/visual-plans/<planId>` | DELETE | Delete a plan |
-| `/api/ai/browse/run_task` | GET | Health check Edge CDP |
-| `/api/ai/browse/run_task` | POST | Spawn a browser task (Dreamina/Flow/article) |
+| `/api/projects/<id>/research` | GET/POST | Get/add research notes (hierarchical tree) |
+| `/api/projects/<id>/sources` | GET/POST | Get/add sources |
+| `/api/projects/<id>/visual-plans` | GET/POST | List/create visual plans |
+| `/api/visual-plans/<planId>` | GET/PATCH/DELETE | Read/update/delete a plan |
+| `/api/ai/browse/run_task` | GET/POST | Health check / spawn browser task |
 | `/api/ai/chat` | POST | Streaming chat with AI co-pilot |
 | `/api/ai/settings` | GET/POST | AI provider settings (ZAI/Ollama) |
 | `/api/prompts` | GET | List all prompt folders/files |
 | `/api/prompts/<folder>/<file>` | GET | Read a specific prompt file |
 | `/api/seed` | POST | Seed sample documentary data |
 
+## Prompt folders available via API
+
+When you call `/api/prompts`, you'll get:
+- `script-v5` — Script Generation v5 (app-connected)
+- `script-v4` — Script Generation v4 (original)
+- `visual-v7-glm` — Visual Generation v7 for GLM (Remotion + app connection)
+- `visual-v6-claude` — Visual Generation v6 for Claude (reference)
+- `visual-v6-glm` — Visual Generation v6 for GLM (reference)
+
+Read individual files: `GET /api/prompts/visual-v7-glm/Visuals%20Generation%20Prompt%20v7`
+
 ## Visual plan JSON shape
 
 ```json
 {
-  "title": "Visual plan — Act I: The Basement",
+  "title": "Visual plan — Act I",
   "status": "in_review",
-  "scriptSnapshot": "<exact script text this plan is based on>",
-  "scriptSectionId": "",
-  "shotsJson": "[{...}, {...}]",
+  "scriptSnapshot": "<exact script text>",
+  "shotsJson": "[{...}]",
   "feedbackJson": "[]",
   "remotionCode": "",
   "remotionPreview": "",
@@ -74,24 +97,11 @@ You (the AI agent in any chat) connect to it via a Cloudflare tunnel URL the use
 }
 ```
 
-## Shot object shape
+## Status flow
 
-```json
-{
-  "id": "shot-001",
-  "archetype": "STAT_COUNTER",
-  "duration": 5.0,
-  "visual": "What appears on screen",
-  "motion": "How it moves (fade/scale/translate/morph)",
-  "textOverlay": "Optional text shown",
-  "narration": "The script line this shot covers",
-  "asset": {
-    "capability": "dreamina.still_image",
-    "prompt": "The prompt for the browser tool",
-    "status": "pending",
-    "path": ""
-  }
-}
+```
+draft → in_review → approved → rendered
+                ↘ changes_requested → in_review (loop)
 ```
 
 ## Browser task JSON shape
@@ -105,70 +115,10 @@ You (the AI agent in any chat) connect to it via a Cloudflare tunnel URL the use
 }
 ```
 
-Response includes `status`:
-- `READY_FOR_AUTHORIZED_EXECUTION` — UI is ready, re-push with `allow_credit_spend: true` after user approval
-- `LOW_CONFIDENCE_UI` — run scout first (`tools/browser/browser_scout.js`)
-- `CREDIT_SPEND_NOT_AUTHORIZED` — same as ready, just emphasizing the gate
-- `PENDING` — still observing
-
-## Feedback object shape
-
-```json
-{
-  "role": "user",
-  "content": "Shot 3 is too long. Make it 4s not 6s.",
-  "timestamp": "2026-06-26T12:34:56.789Z"
-}
-```
-
-Roles: `user` (the human), `ai` (your responses), `system` (status changes like "approved").
-
-## Status flow
-
-```
-draft → in_review → approved → rendered
-                ↘ changes_requested → in_review (loop)
-```
-
-- `draft`: you created it, haven't asked for review yet
-- `in_review`: pushed to app, waiting for user
-- `changes_requested`: user gave feedback, you need to update
-- `approved`: user clicked Approve — you can now generate code + assets
-- `rendered`: you've pushed final code + preview
-
-## The script + research push protocol (for Script Gen v4)
-
-After generating a script:
-
-1. Push research as hierarchical topics + child links:
-   ```
-   POST /api/projects/<id>/research
-   { "parentId": null, "title": "Topic name", "url": "", "category": "context" }
-   ```
-   Then for each source under that topic:
-   ```
-   POST /api/projects/<id>/research
-   { "parentId": "<topic_id>", "title": "Source title | Publisher", "url": "https://...", "category": "fact-check" }
-   ```
-
-2. Push script sections:
-   ```
-   POST /api/projects/<id>/script
-   { "type": "act", "heading": "ACT I", "content": "Narration with [1][2] footnotes" }
-   ```
-
-3. Push sources (for the footnote references):
-   ```
-   POST /api/projects/<id>/sources
-   { "type": "article", "title": "...", "url": "...", "citation": "APA citation", "credibility": 4 }
-   ```
-
-The app renders `[1]` footnotes as clickable links that open in a sidebar showing:
-- The source URL
-- An AI summarize button
-- A chat-about-this-source button
-
-So every `[N]` in the script MUST map to a source you push.
+Response status:
+- `READY_FOR_AUTHORIZED_EXECUTION` — UI ready, re-push with `allow_credit_spend: true` after user approval
+- `LOW_CONFIDENCE_UI` — run scout first
+- `CREDIT_SPEND_NOT_AUTHORIZED` — ready but gated
 
 ## Error handling
 

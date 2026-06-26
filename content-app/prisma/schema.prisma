@@ -1,0 +1,122 @@
+// Documentary Production Studio schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id              String         @id @default(cuid())
+  title           String
+  logline         String?
+  description     String?
+  status          String         @default("research") // research | scripting | production | editing | published
+  targetRuntime   Int            @default(30) // minutes
+  narrationWpm    Int            @default(150) // words per minute for runtime calc
+  coverColor      String         @default("amber") // tailwind color name for the card cover
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  researchNotes   ResearchNote[]
+  sources         Source[]
+  scenes          Scene[]
+  scriptSections  ScriptSection[]
+  tasks           Task[]
+  visualPlans     VisualPlan[]
+}
+
+model ResearchNote {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId    String?  // null = top-level topic; non-null = child link under that parent
+  title       String
+  content     String   @default("")
+  url         String   @default("") // for child links: the source URL
+  category    String   @default("general") // general | interview | archival | context | fact-check
+  tags        String   @default("") // comma-separated
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Source {
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type            String   @default("article") // book | article | video | interview | website | archival | paper
+  title           String
+  author          String   @default("")
+  url             String   @default("")
+  publisher       String   @default("")
+  publicationDate String   @default("")
+  citation        String   @default("")
+  notes           String   @default("")
+  credibility     Int      @default(3) // 1-5
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Scene {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order        Int      @default(0)
+  title        String
+  shotType     String   @default("") // A-roll | B-roll | Interview | Archival | Animation | Drone
+  location     String   @default("")
+  description  String   @default("")
+  narration    String   @default("")
+  duration     Int      @default(60) // seconds
+  brollNotes   String   @default("")
+  status       String   @default("planned") // planned | filmed | edited | locked
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ScriptSection {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order      Int      @default(0)
+  type       String   @default("act") // hook | act | transition | outro
+  heading    String
+  content    String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Task {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title      String
+  category   String   @default("general") // research | filming | editing | graphics | sound | licensing | publish
+  status     String   @default("todo") // todo | in-progress | done | blocked
+  priority   String   @default("medium") // low | medium | high
+  dueDate    String   @default("")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model VisualPlan {
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  status          String   @default("draft") // draft | in_review | approved | changes_requested | rendered
+  scriptSnapshot  String   @default("") // the script content this plan was generated from (for diff detection)
+  scriptSectionId String   @default("") // which script section this covers (optional)
+  shotsJson       String   @default("[]") // JSON array of shot objects
+  feedbackJson    String   @default("[]") // JSON array of {role, content, timestamp}
+  remotionCode    String   @default("") // generated Remotion component code
+  remotionPreview String   @default("") // base64 PNG or URL of rendered preview
+  browserTasksJson String  @default("[]") // JSON array of browser task results
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -1,3 +1,14 @@
 .DS_Store
 *.tmp
 *.bak
+
+# App runtime (in content-app/)
+content-app/node_modules/
+content-app/.next/
+content-app/db/*.db
+content-app/db/*.db-journal
+content-app/.ai-settings.json
+content-app/.z-ai-config
+content-app/dev.log
+content-app/server.log
+content-app/*.log

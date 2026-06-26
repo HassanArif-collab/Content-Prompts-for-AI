@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+build/
+
+# Database (local SQLite — each user has their own)
+db/*.db
+db/*.db-journal
+
+# AI settings (local config — don't commit)
+.ai-settings.json
+.z-ai-config
+
+# Logs
+dev.log
+server.log
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

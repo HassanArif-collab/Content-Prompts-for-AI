@@ -1,76 +1,72 @@
 # Content-Prompts-for-AI
 
-Prompt library for AI-driven documentary content production.
+Prompt library + Documentary Studio app for AI-driven documentary content production.
 
-## What's here
+## Repository Structure
 
-| Folder | Purpose | Render Stack | App Connected |
-|---|---|---|---|
-| `script-v5/` | Script Generation v5 for GLM (ZAI Chat) — app-connected | N/A | ✅ (pushes script + research + sources + tasks to app) |
-| `script-v4/` | Script Generation Prompt v4 (original, 10-agent pipeline) | N/A | ✅ (has APP PUSH PROTOCOL section added) |
-| `visual-v7-glm/` | Visual Generation v7 for GLM (ZAI Chat) — app-connected | Remotion | ✅ (full app connection, tools inside app) |
-| `visual-v6-claude/` | Visual Generation v6 for Claude Code | Remotion | ❌ (reference only) |
-| `visual-v6-glm/` | Visual Generation v6 for GLM (older) | HTML/CSS + GSAP | ❌ (reference only) |
+```
+Content-Prompts-for-AI/
+├── README.md                          ← You are here
+├── APP-CONNECTION-PROTOCOL.md         ← How any AI agent connects to the app
+├── CODEX-AGENT-PLAN.md                ← Detailed plan for Codex agent
+├── prompts/                           ← Canonical prompt library (edit here)
+│   ├── script-v5/                     ← Script Gen v5 (app-connected, 11 files)
+│   ├── script-v4/                     ← Script Gen v4 (original, 11 files)
+│   ├── visual-v7-glm/                 ← Visual Gen v7 for GLM (14 prompts + 7 tools)
+│   ├── visual-v6-claude/              ← Visual Gen v6 for Claude (reference)
+│   └── visual-v6-glm/                 ← Visual Gen v6 for GLM (reference)
+└── content-app/                       ← Documentary Studio app (Next.js)
+    ├── src/                           ← App source code
+    ├── prisma/                        ← Database schema
+    ├── tools/                         ← Browser automation tools
+    ├── prompts/                       ← Copy of canonical prompts (served via /api/prompts)
+    ├── start.bat                      ← Windows one-click installer
+    ├── package.json
+    └── .env
+```
 
-## Quick start
+## Quick Start
 
-1. **Run the Documentary Studio app** on your Windows PC
-   - Download `documentary-studio-local.zip`
-   - Double-click `start.bat`
-   - App opens at `http://localhost:3000`
+### 1. Run the app on your PC
 
-2. **Start the Cloudflare tunnel** in the app
-   - Click "Start tunnel" in the top banner
-   - Copy the URL (e.g. `https://random-words.trycloudflare.com`)
+```bash
+git clone https://github.com/HassanArif-collab/Content-Prompts-for-AI.git
+cd Content-Prompts-for-AI/content-app
 
-3. **Paste the URL in your AI chat** (Z.ai, Claude, etc.)
+# Double-click start.bat on Windows (auto-installs everything)
+# OR manually:
+bun install
+bun run db:push
+bun run dev
+```
 
-4. **Tell the AI what to do:**
-   - For visual plans: "Read `visual-v7-glm/v7/Visuals Generation Prompt v7.md` and execute"
-   - For scripts: "Read `script-v5/Script Generation Prompt v5.md` and execute"
+App opens at http://localhost:3000
 
-The AI will:
-- Fetch your script from the app (always fresh)
-- Generate a plan / script
-- Push it to the app
-- Wait for your approval in the app's UI
-- Iterate based on your feedback
-- Generate code + trigger browser tasks after approval
+### 2. Start the Cloudflare tunnel
 
-## Key files
+In the app, click "Start tunnel" in the top banner. Copy the public URL.
 
-- `APP-CONNECTION-PROTOCOL.md` — How any AI agent connects to the app (read this first)
-- `CODEX-AGENT-PLAN.md` — Detailed plan for the Codex agent that maintains this repo
-- `visual-v7-glm/v7/Visuals Generation Prompt v7.md` — Main visual generation prompt (app-connected)
-- `script-v5/Script Generation Prompt v5.md` — Main script generation prompt (app-connected, v5)
-- `script-v4/Script Generation Prompt v4.md` — Original script generation prompt (v4, with APP PUSH PROTOCOL added)
+### 3. Connect your AI chat
 
-## The app
+Paste the tunnel URL in your AI chat. Then tell the AI:
+- For visual plans: "Read visual-v7-glm/v7/Visuals Generation Prompt v7.md and execute"
+- For scripts: "Read script-v5/Script Generation Prompt v5.md and execute"
 
-The Documentary Studio app is a separate project (Next.js + Prisma + SQLite). It provides:
-- Project management (dashboard, projects)
-- Research tab (hierarchical tree of topics + links)
-- Script tab (with live runtime calculator)
-- Storyboard tab (scene planning)
-- Visual Plans tab (review/approve/feedback for AI-pushed plans)
-- Sources tab (citation library)
-- Production tab (kanban task board)
-- AI Co-pilot sidebar (streaming chat with Ollama or ZAI cloud)
-- Cloudflare tunnel integration (one-click public URL)
-- Browser automation bridge (spawns `tools/browser/browser_task.js`)
+## Key Documentation
 
-## Browser automation
+- APP-CONNECTION-PROTOCOL.md — Full API reference for any AI agent
+- CODEX-AGENT-PLAN.md — Detailed plan for the Codex agent
 
-The `visual-v7-glm/tools/` folder contains:
-- `browser/browser_task.js` — Main entry, runs capability tasks (Dreamina, Flow, article capture)
-- `browser/edge_keepopen.js` — Launches Edge with CDP debug port 9222
-- `browser/browser_scout.js` — UI scouting for new sites
-- `browser/browser_deep_scout.js` — Deep UI mapping
-- `dreamina/dreamina_image_probe.js` — Dreamina image generation
-- `dreamina/dreamina_download_latest.js` — Downloads generated images
-- `routing/visual_tool_router.js` — Routes tasks to the right tool
+## Syncing Prompts
 
-The app's `/api/ai/browse/run_task` endpoint spawns these scripts on the user's PC.
+Canonical prompts: prompts/ (repo root)
+App copy: content-app/prompts/ (served via /api/prompts)
+
+When you update prompts, sync:
+```bash
+rm -rf content-app/prompts
+cp -r prompts content-app/prompts
+```
 
 ## License
 
