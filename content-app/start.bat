@@ -10,12 +10,15 @@ echo  ║         Auto-installs everything you need                ║
 echo  ╚══════════════════════════════════════════════════════════╝
 echo.
 
+REM Preserve known tool locations because elevated launchers may inherit a stale PATH.
+set "PATH=%SystemRoot%\System32;%SystemRoot%;%ProgramFiles%\nodejs;%LOCALAPPDATA%\Programs\Ollama;%APPDATA%\npm;%LOCALAPPDATA%\Microsoft\WindowsApps;%PATH%"
+
 REM ─── Step 1: Check Node.js ─────────────────────────────────
 echo  [1/7] Checking Node.js...
 where node >nul 2>nul
 if errorlevel 1 (
     echo       Node.js not found. Installing via winget...
-    echo       (this may take 1-2 minutes, please wait)
+    echo       ^(this may take 1-2 minutes, please wait^)
     winget install --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements -h
     if errorlevel 1 (
         echo.
@@ -58,7 +61,7 @@ if errorlevel 1 (
     exit /b 1
 ) else (
     echo       pnpm OK:
-    pnpm --version
+    call pnpm --version
 )
 echo.
 
@@ -73,7 +76,7 @@ if errorlevel 1 (
         echo  [WARNING] Could not install Ollama automatically.
         echo           Please install manually from https://ollama.com
         echo           Then run this script again.
-        echo           (Cloud AI features will not work without Ollama)
+        echo           ^(Cloud AI features will not work without Ollama^)
         echo.
         pause
     ) else (
@@ -90,7 +93,7 @@ REM ─── Step 4: Start Ollama server if not running ───────�
 echo  [4/7] Checking Ollama server...
 curl -s http://localhost:11434/api/tags >nul 2>nul
 if errorlevel 1 (
-    echo       Starting ollama serve (in background)...
+    echo       Starting ollama serve ^(in background^)...
     start "" /B ollama serve
     timeout /t 3 /nobreak >nul
     curl -s http://localhost:11434/api/tags >nul 2>nul
@@ -109,7 +112,7 @@ REM ─── Step 5: Pull default model if none installed ───────
 echo  [5/7] Checking installed models...
 for /f "delims=" %%i in ('ollama list 2^>nul ^| findstr /v "NAME" ^| findstr /v "^$"') do set HAS_MODELS=1
 if not defined HAS_MODELS (
-    echo       No models found. Pulling llama3.1 (4.7GB, one-time download)...
+    echo       No models found. Pulling llama3.1 ^(4.7GB, one-time download^)...
     echo       This may take 5-15 minutes depending on your internet.
     ollama pull llama3.1
     if errorlevel 1 (
@@ -147,12 +150,15 @@ set "NPM_CONFIG_CACHE=%APP_RUNTIME%\npm-cache"
 set "PLAYWRIGHT_BROWSERS_PATH=%APP_RUNTIME%\playwright-browsers"
 set "PNPM_STORE=%~d0\.pnpm-store\v11"
 echo       Using pnpm...
+set "CI=true"
 call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 if errorlevel 1 (
+    set "CI="
     echo  [ERROR] pnpm install failed.
     pause
     exit /b 1
 )
+set "CI="
 call pnpm approve-builds --all
 call pnpm rebuild
 echo       Creating database...
@@ -181,8 +187,8 @@ echo  ║                                                          ║
 echo  ║  When the app opens in your browser:                     ║
 echo  ║   - Click "AI provider" → Ollama → Test → Save           ║
 echo  ║   - Click "Start tunnel" to get a public URL             ║
-echo  ║     (paste that URL in your AI chat so I can push        ║
-echo  ║      visual plans and code to your app)                  ║
+echo  ║     ^(paste that URL in your AI chat so I can push        ║
+echo  ║      visual plans and code to your app^)                  ║
 echo  ╚══════════════════════════════════════════════════════════╝
 echo.
 
@@ -197,7 +203,8 @@ pause
 REM ─── Helper: refresh environment variables ─────────────────
 :refreshenv
 REM Re-read PATH from registry (handles newly installed tools)
+set "PATH=%SystemRoot%\System32;%SystemRoot%;%PATH%"
 for /f "usebackq tokens=2,*" %%A in (`reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH 2^>nul`) do set "SYS_PATH=%%B"
 for /f "usebackq tokens=2,*" %%A in (`reg query "HKCU\Environment" /v PATH 2^>nul`) do set "USR_PATH=%%B"
-set "PATH=%USR_PATH%;%SYS_PATH%"
+set "PATH=%SystemRoot%\System32;%SystemRoot%;%SystemRoot%\System32\Wbem;%ProgramFiles%\nodejs;%LOCALAPPDATA%\Programs\Ollama;%APPDATA%\npm;%LOCALAPPDATA%\Microsoft\WindowsApps;%USR_PATH%;%SYS_PATH%;%PATH%"
 goto :eof

@@ -8,7 +8,7 @@
 ## CURRENT STATE
 
 - **Last updated**: 2026-06-27
-- **Current step**: Step 2
+- **Current step**: Step 4
 - **Overall status**: IN PROGRESS
 
 ---
@@ -18,8 +18,8 @@
 | Step | Status | Started | Completed | Notes |
 |------|--------|---------|-----------|-------|
 | 1. Re-read plan, inspect worktree | COMPLETED | 2026-06-27 | 2026-06-27 | Current v7 prompt is Remotion-native; post-pull worktree was clean. |
-| 2. Start app with G: redirect | NOT STARTED | - | - | - |
-| 3. GLM HTTP smoke test | NOT STARTED | - | - | - |
+| 2. Start app with G: redirect | BLOCKED | 2026-06-27 | 2026-06-27 | G: redirect works, but the real start.bat test entered a Node winget/UAC path and did not reach port 3000. |
+| 3. GLM HTTP smoke test | COMPLETED | 2026-06-27 | 2026-06-27 | Production server on port 3001 passed 10/10, including a real Remotion PNG. |
 | 4. UI + Remotion preview test | NOT STARTED | - | - | - |
 | 5. Dreamina/Flow routing test | NOT STARTED | - | - | - |
 | 6. Typecheck, commit, push | NOT STARTED | - | - | - |
@@ -40,15 +40,26 @@
 ---
 
 ### Step 2: Start app with G: redirect
-**Status**: NOT STARTED
-**Server URL**: (to be filled)
-**Issues**: (to be filled)
+**Status**: BLOCKED
+**Server URL**: `http://localhost:3001` verified for the production build; `http://localhost:3000` was not reached through `start.bat`.
+**Issues**:
+- The launcher correctly redirects app temp/cache, Prisma, npm, Playwright, and pnpm store data to the workspace/G: drive.
+- A real `start.bat` run unexpectedly entered the Node winget installer despite Node having been present, then stalled on the administrator/UAC installation stage.
+- The interrupted upgrade removed the previous Node runtime; Node.js LTS `v24.18.0` was repaired successfully with winget and Corepack `0.35.0` was verified.
+- All batch checks were surgically changed from early-expanded `%errorlevel%` expressions to the safe `if errorlevel 1` form. A full clean rerun is still required before this step can be promoted from BLOCKED.
+- An isolated batch smoke proved the elevated launcher imports registry PATH entries with literal `%SystemRoot%`, hiding `where.exe`; `refreshenv` now preserves explicit Windows system paths and the pnpm version probe uses `call` so control returns to `start.bat`.
+- The full rerun now reaches Node, pnpm, Ollama, and Step 4, but `cmd.exe` still stops on mixed LF/CRLF parsing. Mechanical CRLF normalization is the remaining launcher fix awaiting execution permission.
 
 ---
 
 ### Step 3: GLM HTTP smoke test
-**Status**: NOT STARTED
-**Test results**: (to be filled)
+**Status**: COMPLETED
+**Test results**:
+- Independent local sub-agent confirmed the smoke script's prompt/project/script/visual-plan/Remotion/browser-health coverage and made no edits or credit-spending calls; its own runtime attempt was interrupted by a transient C: disk-space failure.
+- Main-agent production run: **10/10 PASS** against `http://localhost:3001`.
+- Verified API health, prompt index, nested visual-v7 and script-v5 prompt retrieval, project/script access, visual-plan create/update, and browser health.
+- Remotion preview rendered a real `1280x720` PNG (`975,972` base64 characters) through `POST /api/render/preview`.
+- Browser health failed safely because Edge CDP `127.0.0.1:9222` was not active; no Dreamina/Flow generation call was made and no credits were spent.
 
 ---
 
