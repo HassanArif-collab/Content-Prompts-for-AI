@@ -7,9 +7,9 @@
 
 ## CURRENT STATE
 
-- **Last updated**: (not started)
-- **Current step**: Step 1
-- **Overall status**: NOT STARTED
+- **Last updated**: 2026-06-27
+- **Current step**: Step 2
+- **Overall status**: IN PROGRESS
 
 ---
 
@@ -17,7 +17,7 @@
 
 | Step | Status | Started | Completed | Notes |
 |------|--------|---------|-----------|-------|
-| 1. Re-read plan, inspect worktree | NOT STARTED | - | - | - |
+| 1. Re-read plan, inspect worktree | COMPLETED | 2026-06-27 | 2026-06-27 | Current v7 prompt is Remotion-native; post-pull worktree was clean. |
 | 2. Start app with G: redirect | NOT STARTED | - | - | - |
 | 3. GLM HTTP smoke test | NOT STARTED | - | - | - |
 | 4. UI + Remotion preview test | NOT STARTED | - | - | - |
@@ -29,8 +29,13 @@
 ## DETAILED LOG
 
 ### Step 1: Re-read plan, inspect worktree
-**Status**: NOT STARTED
-**Findings**: (to be filled)
+**Status**: COMPLETED
+**Findings**:
+- Read `CODEX-AGENT-PLAN.md`, the full current `prompts/visual-v7-glm/v7/Visuals Generation Prompt v7.md`, `AGENTS.md`, and recent git history.
+- The current v7 visual prompt intentionally defines Remotion (React + FFmpeg) as the canonical render stack and includes the app bridge, browser capability routing, and credit safety rules.
+- `CODEX-AGENT-PLAN.md` still contains historical HTML/GSAP merge language; it was not used to rewrite the newer Remotion workflow.
+- The app worktree was clean after checkpoint commit `0d1088c` and merge commit `586d805` pulled the progress-tracking files.
+- Existing implementation includes nested prompt retrieval, GLM HTTP smoke coverage, Remotion preview rendering, and browser task routing. Remaining steps require launcher/UI/dry-run verification.
 
 ---
 

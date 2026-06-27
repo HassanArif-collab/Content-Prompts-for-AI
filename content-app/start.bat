@@ -13,11 +13,11 @@ echo.
 REM ─── Step 1: Check Node.js ─────────────────────────────────
 echo  [1/7] Checking Node.js...
 where node >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo       Node.js not found. Installing via winget...
     echo       (this may take 1-2 minutes, please wait)
     winget install --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements -h
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo.
         echo  [ERROR] Could not install Node.js automatically.
         echo          Please install manually from https://nodejs.org
@@ -35,10 +35,10 @@ echo.
 REM ─── Step 2: Check pnpm ────────────────────────────────────
 echo  [2/7] Checking pnpm...
 where pnpm >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo       pnpm not found. Enabling via corepack...
     where corepack >nul 2>nul
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo.
         echo  [ERROR] corepack not found after Node.js install.
         echo          Please reopen this script, or install Node.js from https://nodejs.org
@@ -50,7 +50,7 @@ if %errorlevel% neq 0 (
     call :refreshenv
 )
 where pnpm >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo.
     echo  [ERROR] pnpm is still not available.
     echo          Please reopen this script and try again.
@@ -65,10 +65,10 @@ echo.
 REM ─── Step 3: Check Ollama ──────────────────────────────────
 echo  [3/7] Checking Ollama...
 where ollama >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo       Ollama not found. Installing via winget...
     winget install --id Ollama.Ollama --accept-package-agreements --accept-source-agreements -h
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo.
         echo  [WARNING] Could not install Ollama automatically.
         echo           Please install manually from https://ollama.com
@@ -89,12 +89,12 @@ echo.
 REM ─── Step 4: Start Ollama server if not running ────────────
 echo  [4/7] Checking Ollama server...
 curl -s http://localhost:11434/api/tags >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo       Starting ollama serve (in background)...
     start "" /B ollama serve
     timeout /t 3 /nobreak >nul
     curl -s http://localhost:11434/api/tags >nul 2>nul
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo       [WARNING] Ollama server didn't start. AI features will not work.
         echo                Try running 'ollama serve' in a separate terminal.
     ) else (
@@ -112,7 +112,7 @@ if not defined HAS_MODELS (
     echo       No models found. Pulling llama3.1 (4.7GB, one-time download)...
     echo       This may take 5-15 minutes depending on your internet.
     ollama pull llama3.1
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo       [WARNING] Could not pull llama3.1. Try 'ollama pull llama3.1' manually.
     ) else (
         echo       Model llama3.1 ready.
@@ -148,7 +148,7 @@ set "PLAYWRIGHT_BROWSERS_PATH=%APP_RUNTIME%\playwright-browsers"
 set "PNPM_STORE=%~d0\.pnpm-store\v11"
 echo       Using pnpm...
 call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo  [ERROR] pnpm install failed.
     pause
     exit /b 1
@@ -157,14 +157,14 @@ call pnpm approve-builds --all
 call pnpm rebuild
 echo       Creating database...
 call pnpm exec prisma db push
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo  [ERROR] Database setup failed.
     pause
     exit /b 1
 )
 echo       Installing Playwright Chromium...
 call pnpm exec playwright install chromium
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo       [WARNING] Playwright Chromium install failed. Browser automation may not work.
 )
 echo.
