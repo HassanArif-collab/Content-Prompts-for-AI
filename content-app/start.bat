@@ -149,18 +149,22 @@ set "XDG_CACHE_HOME=%APP_RUNTIME%\prisma-cache"
 set "NPM_CONFIG_CACHE=%APP_RUNTIME%\npm-cache"
 set "PLAYWRIGHT_BROWSERS_PATH=%APP_RUNTIME%\playwright-browsers"
 set "PNPM_STORE=%~d0\.pnpm-store\v11"
-echo       Using pnpm...
-set "CI=true"
-call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
-if errorlevel 1 (
+if exist "%~dp0node_modules\.bin\next.cmd" (
+    echo       Dependencies already installed.
+) else (
+    echo       Using pnpm...
+    set "CI=true"
+    call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+    if errorlevel 1 (
+        set "CI="
+        echo  [ERROR] pnpm install failed.
+        pause
+        exit /b 1
+    )
     set "CI="
-    echo  [ERROR] pnpm install failed.
-    pause
-    exit /b 1
+    call pnpm approve-builds --all
+    call pnpm rebuild
 )
-set "CI="
-call pnpm approve-builds --all
-call pnpm rebuild
 echo       Creating database...
 call pnpm exec prisma db push
 if errorlevel 1 (
