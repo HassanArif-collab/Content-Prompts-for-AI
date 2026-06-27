@@ -149,7 +149,6 @@ set "XDG_CACHE_HOME=%APP_RUNTIME%\prisma-cache"
 set "NPM_CONFIG_CACHE=%APP_RUNTIME%\npm-cache"
 set "PLAYWRIGHT_BROWSERS_PATH=%APP_RUNTIME%\playwright-browsers"
 set "PNPM_STORE=%~d0\.pnpm-store\v11"
-if exist "node_modules\.pnpm" goto :skip_install
 echo       Using pnpm...
 set "CI=true"
 call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
@@ -162,10 +161,13 @@ if errorlevel 1 (
 set "CI="
 call pnpm approve-builds --all
 call pnpm rebuild
-:skip_install
-echo       Setting up database...
-call pnpm exec prisma db push 2>nul
-if errorlevel 1 echo       [INFO] Database already exists, continuing...
+echo       Creating database...
+call pnpm exec prisma db push
+if errorlevel 1 (
+    echo  [ERROR] Database setup failed.
+    pause
+    exit /b 1
+)
 echo       Installing Playwright Chromium...
 call pnpm exec playwright install chromium
 if errorlevel 1 (
