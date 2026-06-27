@@ -28,7 +28,6 @@ if errorlevel 1 (
         pause
         exit /b 1
     )
-    REM Refresh PATH
     call :refreshenv
 )
 echo       Node.js OK: 
@@ -127,7 +126,7 @@ if not defined HAS_MODELS (
 echo.
 
 REM ─── Step 6: Install app dependencies ──────────────────────
-echo  [6/7] Installing app dependencies...
+echo  [6/7] Checking app dependencies...
 cd /d "%~dp0"
 set "APP_RUNTIME=%~dp0runtime"
 if not exist "%APP_RUNTIME%\temp" mkdir "%APP_RUNTIME%\temp"
@@ -149,29 +148,40 @@ set "XDG_CACHE_HOME=%APP_RUNTIME%\prisma-cache"
 set "NPM_CONFIG_CACHE=%APP_RUNTIME%\npm-cache"
 set "PLAYWRIGHT_BROWSERS_PATH=%APP_RUNTIME%\playwright-browsers"
 set "PNPM_STORE=%~d0\.pnpm-store\v11"
-echo       Using pnpm...
-set "CI=true"
-call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
-if errorlevel 1 (
+
+REM FIX: Only install if node_modules doesn't exist
+if exist "node_modules\.modules.yaml" (
+    echo       Dependencies already installed. Skipping install.
+) else (
+    echo       Installing dependencies (first run only)...
+    set "CI=true"
+    call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+    if errorlevel 1 (
+        set "CI="
+        echo  [ERROR] pnpm install failed.
+        pause
+        exit /b 1
+    )
     set "CI="
-    echo  [ERROR] pnpm install failed.
-    pause
-    exit /b 1
+    call pnpm approve-builds --all 2>nul
+    call pnpm rebuild 2>nul
 )
-set "CI="
-call pnpm approve-builds --all
-call pnpm rebuild
-echo       Creating database...
+
+echo       Setting up database...
 call pnpm exec prisma db push
 if errorlevel 1 (
-    echo  [ERROR] Database setup failed.
-    pause
-    exit /b 1
+    echo  [WARNING] Database setup had an issue. Trying to continue...
 )
-echo       Installing Playwright Chromium...
-call pnpm exec playwright install chromium
-if errorlevel 1 (
-    echo       [WARNING] Playwright Chromium install failed. Browser automation may not work.
+
+REM Only install Playwright if not already installed
+if not exist "%APP_RUNTIME%\playwright-browsers\chromium-1228" (
+    echo       Installing Playwright Chromium...
+    call pnpm exec playwright install chromium
+    if errorlevel 1 (
+        echo       [WARNING] Playwright Chromium install failed. Browser automation may not work.
+    )
+) else (
+    echo       Playwright Chromium already installed.
 )
 echo.
 
@@ -185,10 +195,10 @@ echo  ║  This window MUST stay open while you use the app.       ║
 echo  ║  To stop the app: close this window or press Ctrl+C.     ║
 echo  ║                                                          ║
 echo  ║  When the app opens in your browser:                     ║
-echo  ║   - Click "AI provider" → Ollama → Test → Save           ║
+echo  ║   - Click "AI provider" then Ollama then Test then Save  ║
 echo  ║   - Click "Start tunnel" to get a public URL             ║
-echo  ║     ^(paste that URL in your AI chat so I can push        ║
-echo  ║      visual plans and code to your app^)                  ║
+echo  ║     paste that URL in your AI chat so I can push         ║
+echo  ║      visual plans and code to your app                   ║
 echo  ╚══════════════════════════════════════════════════════════╝
 echo.
 
