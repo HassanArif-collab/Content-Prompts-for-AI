@@ -3,7 +3,7 @@
 //
 // Capabilities:
 //   dreamina.still_image     → /api/ai/browse/dreamina-image
-//   dreamina.multiframes     → /api/ai/browse/dreamina-image (with --agent)
+//   dreamina.multiframes     → tools/browser/browser_task.js (observe/dry-run until video UI is mapped)
 //   dreamina.download        → /api/ai/browse/dreamina-download
 //   browser.source_capture   → tools/browser/browser_task.js (observe only)
 //   flow.*                   → tools/browser/browser_task.js (observe only, no Flow tools yet)
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const cap = body.capability
 
   // Route based on capability
-  if (cap === 'dreamina.still_image' || cap === 'dreamina.multiframes') {
+  if (cap === 'dreamina.still_image') {
     return handleDreaminaImage(body)
   }
 
@@ -44,10 +44,13 @@ export async function POST(req: NextRequest) {
 
 async function handleDreaminaImage(body: {
   prompt?: string
+  inputs?: Record<string, unknown>
   allow_credit_spend?: boolean
   capability: string
 }) {
-  if (!body.prompt) {
+  const prompt = getStringInput(body, 'prompt')
+
+  if (!prompt) {
     return NextResponse.json({
       ok: false,
       error: 'prompt required for dreamina.still_image',
@@ -68,7 +71,7 @@ async function handleDreaminaImage(body: {
   if (body.allow_credit_spend) {
     args.push('--generate', '--allow-gpt-batch')
   }
-  args.push('--prompt', body.prompt)
+  args.push('--prompt', prompt)
 
   const result = await runTool('dreamina/dreamina_image_probe.js', args, 120_000)
 
@@ -80,6 +83,15 @@ async function handleDreaminaImage(body: {
     stderr: result.stderr?.slice(0, 2000),
     timedOut: result.timedOut,
   }, { status: result.ok ? 200 : 500 })
+}
+
+function getStringInput(body: {
+  prompt?: string
+  inputs?: Record<string, unknown>
+}, key: string) {
+  if (typeof body[key as 'prompt'] === 'string') return body[key as 'prompt']
+  const value = body.inputs?.[key]
+  return typeof value === 'string' ? value : undefined
 }
 
 async function handleDreaminaDownload(body: {

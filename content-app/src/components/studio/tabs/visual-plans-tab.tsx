@@ -150,6 +150,7 @@ export function VisualPlansTab({ project, onChange }: {
       <PlanDetailDialog
         plan={selected}
         onOpenChange={(v) => { if (!v) setSelected(null) }}
+        onPlanUpdated={setSelected}
         onSaved={() => { load(); onChange() }}
         projectId={project.id}
       />
@@ -204,9 +205,10 @@ function PlanCard({ plan, onOpen, onRefresh }: {
   )
 }
 
-function PlanDetailDialog({ plan, onOpenChange, onSaved, projectId }: {
+function PlanDetailDialog({ plan, onOpenChange, onPlanUpdated, onSaved, projectId }: {
   plan: VisualPlan | null
   onOpenChange: (v: boolean) => void
+  onPlanUpdated: (plan: VisualPlan) => void
   onSaved: () => void
   projectId: string
 }) {
@@ -220,12 +222,15 @@ function PlanDetailDialog({ plan, onOpenChange, onSaved, projectId }: {
 
   async function updatePlan(patch: Partial<VisualPlan>) {
     if (!plan) return
-    await fetch(`/api/visual-plans/${plan.id}`, {
+    const res = await fetch(`/api/visual-plans/${plan.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
     })
+    const updated = await res.json()
+    onPlanUpdated(updated)
     onSaved()
+    return updated as VisualPlan
   }
 
   async function requestChanges() {
@@ -274,6 +279,33 @@ function PlanDetailDialog({ plan, onOpenChange, onSaved, projectId }: {
     if (!plan?.remotionCode) return
     await navigator.clipboard.writeText(plan.remotionCode)
     toast.success('Remotion code copied')
+  }
+
+  async function renderPreview() {
+    if (!plan?.remotionCode) return
+    setActing(true)
+    try {
+      const res = await fetch('/api/render/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          remotionCode: plan.remotionCode,
+          width: 1920,
+          height: 1080,
+          durationInFrames: 150,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.image) {
+        throw new Error(data.error ?? 'Preview render failed')
+      }
+      await updatePlan({ remotionPreview: data.image })
+      toast.success('Remotion preview rendered')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Preview render failed')
+    } finally {
+      setActing(false)
+    }
   }
 
   return (
@@ -325,9 +357,15 @@ function PlanDetailDialog({ plan, onOpenChange, onSaved, projectId }: {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs text-muted-foreground">Code</span>
-                    <Button size="sm" variant="ghost" onClick={copyRemotionCode}>
-                      <Copy className="w-3 h-3 mr-1" /> Copy
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" onClick={renderPreview} disabled={acting}>
+                        {acting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                        Render preview
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={copyRemotionCode}>
+                        <Copy className="w-3 h-3 mr-1" /> Copy
+                      </Button>
+                    </div>
                   </div>
                   <pre className="text-xs font-mono p-3 rounded-lg bg-muted/40 border border-border/60 max-h-64 overflow-auto studio-scroll">
                     <code>{plan.remotionCode}</code>

@@ -1,5 +1,5 @@
 // AI library — provider-agnostic helpers.
-// Two providers: ZAI (cloud, default) and Ollama (local, http://localhost:11434).
+// Two providers: Ollama (local, default) and ZAI (optional cloud fallback).
 // Provider choice is read from a settings file (no DB migration).
 // Ollama speaks plain HTTP/JSON — no SDK, just fetch (pattern from EditFlowAI's provider_service.py).
 
@@ -31,12 +31,14 @@ let _settingsCache: AiSettings | null = null
 
 export async function getSettings(): Promise<AiSettings> {
   if (_settingsCache) return _settingsCache
+  let settings: AiSettings
   try {
     const raw = await fs.readFile(SETTINGS_PATH, 'utf8')
-    _settingsCache = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+    settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
   } catch {
-    _settingsCache = DEFAULT_SETTINGS
+    settings = DEFAULT_SETTINGS
   }
+  _settingsCache = settings
   return _settingsCache
 }
 

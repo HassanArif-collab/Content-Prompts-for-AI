@@ -7,8 +7,12 @@ content-app/node_modules/
 content-app/.next/
 content-app/db/*.db
 content-app/db/*.db-journal
+content-app/prisma/db/
+content-app/tsconfig.tsbuildinfo
 content-app/.ai-settings.json
 content-app/.z-ai-config
+content-app/qa/
+content-app/runtime/
 content-app/dev.log
 content-app/server.log
 content-app/*.log

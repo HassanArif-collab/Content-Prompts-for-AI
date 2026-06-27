@@ -9,6 +9,8 @@ build/
 # Database (local SQLite — each user has their own)
 db/*.db
 db/*.db-journal
+prisma/db/
+tsconfig.tsbuildinfo
 
 # AI settings (local config — don't commit)
 .ai-settings.json
@@ -18,6 +20,10 @@ db/*.db-journal
 dev.log
 server.log
 *.log
+
+# Runtime browser/tool artifacts
+qa/
+runtime/
 
 # OS files
 .DS_Store

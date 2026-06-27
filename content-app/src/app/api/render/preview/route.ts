@@ -9,17 +9,43 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { chromium } from 'playwright'
+import { renderRemotionPreview } from '@/lib/remotion-renderer'
 
 export async function POST(req: NextRequest) {
   const body = await req.json() as {
-    html: string
+    html?: string
+    remotionCode?: string
+    code?: string
     width?: number
     height?: number
+    fps?: number
+    durationInFrames?: number
+    frame?: number
+    props?: Record<string, unknown>
     waitForAnimation?: number  // ms to wait before screenshot (default 3000)
   }
 
+  const remotionCode = body.remotionCode ?? body.code
+  if (remotionCode) {
+    try {
+      const preview = await renderRemotionPreview({
+        code: remotionCode,
+        width: body.width,
+        height: body.height,
+        fps: body.fps,
+        durationInFrames: body.durationInFrames,
+        frame: body.frame,
+        props: body.props,
+      })
+      return NextResponse.json({ ok: true, engine: 'remotion', ...preview })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'remotion render failed'
+      return NextResponse.json({ ok: false, engine: 'remotion', error: message }, { status: 500 })
+    }
+  }
+
   if (!body.html) {
-    return NextResponse.json({ error: 'html required' }, { status: 400 })
+    return NextResponse.json({ error: 'html or remotionCode required' }, { status: 400 })
   }
 
   const width = body.width ?? 1280

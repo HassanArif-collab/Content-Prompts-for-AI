@@ -32,21 +32,33 @@ echo       Node.js OK:
 node --version
 echo.
 
-REM ─── Step 2: Check Bun ─────────────────────────────────────
-echo  [2/7] Checking Bun (faster than npm)...
-where bun >nul 2>nul
+REM ─── Step 2: Check pnpm ────────────────────────────────────
+echo  [2/7] Checking pnpm...
+where pnpm >nul 2>nul
 if %errorlevel% neq 0 (
-    echo       Bun not found. Installing...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm bun.sh/install.ps1 | iex"
+    echo       pnpm not found. Enabling via corepack...
+    where corepack >nul 2>nul
     if %errorlevel% neq 0 (
-        echo       Bun install failed, will use npm instead.
-        set USE_NPM=1
-    ) else (
-        call :refreshenv
+        echo.
+        echo  [ERROR] corepack not found after Node.js install.
+        echo          Please reopen this script, or install Node.js from https://nodejs.org
+        pause
+        exit /b 1
     )
+    call corepack enable
+    call corepack prepare pnpm@11.7.0 --activate
+    call :refreshenv
+)
+where pnpm >nul 2>nul
+if %errorlevel% neq 0 (
+    echo.
+    echo  [ERROR] pnpm is still not available.
+    echo          Please reopen this script and try again.
+    pause
+    exit /b 1
 ) else (
-    echo       Bun OK:
-    bun --version
+    echo       pnpm OK:
+    pnpm --version
 )
 echo.
 
@@ -114,26 +126,46 @@ echo.
 REM ─── Step 6: Install app dependencies ──────────────────────
 echo  [6/7] Installing app dependencies...
 cd /d "%~dp0"
-if defined USE_NPM (
-    echo       Using npm...
-    call npm install
-    if %errorlevel% neq 0 (
-        echo  [ERROR] npm install failed.
-        pause
-        exit /b 1
-    )
-    echo       Creating database...
-    call npx prisma db push
-) else (
-    echo       Using bun...
-    call bun install
-    if %errorlevel% neq 0 (
-        echo  [ERROR] bun install failed.
-        pause
-        exit /b 1
-    )
-    echo       Creating database...
-    call bun run db:push
+set "APP_RUNTIME=%~dp0runtime"
+if not exist "%APP_RUNTIME%\temp" mkdir "%APP_RUNTIME%\temp"
+if not exist "%APP_RUNTIME%\home" mkdir "%APP_RUNTIME%\home"
+if not exist "%APP_RUNTIME%\prisma-home" mkdir "%APP_RUNTIME%\prisma-home"
+if not exist "%APP_RUNTIME%\prisma-cache" mkdir "%APP_RUNTIME%\prisma-cache"
+if not exist "%APP_RUNTIME%\npm-cache" mkdir "%APP_RUNTIME%\npm-cache"
+if not exist "%APP_RUNTIME%\playwright-browsers" mkdir "%APP_RUNTIME%\playwright-browsers"
+if not exist "%~dp0prisma\db" mkdir "%~dp0prisma\db"
+set "TEMP=%APP_RUNTIME%\temp"
+set "TMP=%APP_RUNTIME%\temp"
+set "TMPDIR=%APP_RUNTIME%\temp"
+set "HOME=%APP_RUNTIME%\home"
+set "USERPROFILE=%APP_RUNTIME%\home"
+set "APPDATA=%APP_RUNTIME%"
+set "LOCALAPPDATA=%APP_RUNTIME%"
+set "PRISMA_HOME=%APP_RUNTIME%\prisma-home"
+set "XDG_CACHE_HOME=%APP_RUNTIME%\prisma-cache"
+set "NPM_CONFIG_CACHE=%APP_RUNTIME%\npm-cache"
+set "PLAYWRIGHT_BROWSERS_PATH=%APP_RUNTIME%\playwright-browsers"
+set "PNPM_STORE=%~d0\.pnpm-store\v11"
+echo       Using pnpm...
+call pnpm install --store-dir "%PNPM_STORE%" --no-frozen-lockfile --network-concurrency=1 --fetch-retries=10 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+if %errorlevel% neq 0 (
+    echo  [ERROR] pnpm install failed.
+    pause
+    exit /b 1
+)
+call pnpm approve-builds --all
+call pnpm rebuild
+echo       Creating database...
+call pnpm exec prisma db push
+if %errorlevel% neq 0 (
+    echo  [ERROR] Database setup failed.
+    pause
+    exit /b 1
+)
+echo       Installing Playwright Chromium...
+call pnpm exec playwright install chromium
+if %errorlevel% neq 0 (
+    echo       [WARNING] Playwright Chromium install failed. Browser automation may not work.
 )
 echo.
 
@@ -158,11 +190,7 @@ REM Open browser after 3 seconds (give server time to start)
 start "" /B cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:3000"
 
 REM Start the dev server (this blocks until Ctrl+C)
-if defined USE_NPM (
-    call npm run dev
-) else (
-    call bun run dev
-)
+call pnpm dev
 
 pause
 
