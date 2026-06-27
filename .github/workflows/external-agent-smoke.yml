@@ -1,0 +1,31 @@
+name: External Agent Tunnel Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Public Documentary Studio URL
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  external-agent-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run GLM agent HTTP smoke through Cloudflare
+        run: >-
+          node content-app/scripts/glm-agent-http-smoke.mjs
+          --base-url "${{ inputs.base_url }}"
+          --timeout-ms 300000
