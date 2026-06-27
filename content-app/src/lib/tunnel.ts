@@ -1,55 +1,68 @@
 // Cloudflare tunnel manager — spawns `cloudflared tunnel --url http://localhost:3000`
-// and parses the public URL from stdout. Single process, kept in module scope.
+// and parses the public URL from stdout. State is process-global so Next.js route
+// bundles and development reloads observe the same child process.
 
 import { spawn, type ChildProcess } from 'child_process'
+import { existsSync } from 'fs'
 
-let tunnelProc: ChildProcess | null = null
-let publicUrl: string | null = null
-let startedAt: Date | null = null
-let lastError: string | null = null
+interface TunnelState {
+  proc: ChildProcess | null
+  publicUrl: string | null
+  startedAt: Date | null
+  lastError: string | null
+}
+
+const tunnelGlobal = globalThis as typeof globalThis & { documentaryTunnelState?: TunnelState }
+const state = tunnelGlobal.documentaryTunnelState ??= {
+  proc: null,
+  publicUrl: null,
+  startedAt: null,
+  lastError: null,
+}
 
 export function getTunnelStatus() {
   return {
-    running: !!tunnelProc && !tunnelProc.killed,
-    url: publicUrl,
-    startedAt: startedAt?.toISOString() ?? null,
-    error: lastError,
+    running: !!state.proc && state.proc.exitCode === null && !state.proc.killed,
+    url: state.publicUrl,
+    startedAt: state.startedAt?.toISOString() ?? null,
+    error: state.lastError,
   }
 }
 
 export function startTunnel(localPort = 3000): Promise<{ url: string } | { error: string }> {
   return new Promise((resolve) => {
-    if (tunnelProc && !tunnelProc.killed) {
-      if (publicUrl) return resolve({ url: publicUrl })
+    if (state.proc && state.proc.exitCode === null && !state.proc.killed) {
+      if (state.publicUrl) return resolve({ url: state.publicUrl })
       return resolve({ error: 'tunnel already starting…' })
     }
 
-    lastError = null
-    publicUrl = null
+    state.lastError = null
+    state.publicUrl = null
 
     try {
-      tunnelProc = spawn('cloudflared', [
+      state.proc = spawn(resolveCloudflaredCommand(), [
         'tunnel',
         '--url', `http://localhost:${localPort}`,
         // No metrics port — keep it simple
       ], { stdio: ['ignore', 'pipe', 'pipe'] })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'spawn failed'
-      lastError = `cloudflared not found: ${msg}. Install from https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/`
-      return resolve({ error: lastError })
+      state.lastError = `cloudflared not found: ${msg}. Install from https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/`
+      return resolve({ error: state.lastError })
     }
 
-    startedAt = new Date()
+    const proc = state.proc
+    state.startedAt = new Date()
     let resolved = false
     let stdoutBuffer = ''
     let stderrBuffer = ''
 
     // cloudflared prints the URL to stderr typically
-    tunnelProc.stderr?.on('data', (chunk: Buffer) => {
+    proc.stderr?.on('data', (chunk: Buffer) => {
       stderrBuffer += chunk.toString()
       checkForUrl(stderrBuffer)
     })
-    tunnelProc.stdout?.on('data', (chunk: Buffer) => {
+    proc.stdout?.on('data', (chunk: Buffer) => {
       stdoutBuffer += chunk.toString()
       checkForUrl(stdoutBuffer)
     })
@@ -59,69 +72,90 @@ export function startTunnel(localPort = 3000): Promise<{ url: string } | { error
       // Match https://random-words-1234.trycloudflare.com
       const match = text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i)
       if (match) {
-        publicUrl = match[0]
+        state.publicUrl = match[0]
         resolved = true
-        resolve({ url: publicUrl })
+        resolve({ url: state.publicUrl })
       }
     }
 
-    tunnelProc.on('error', (err) => {
-      lastError = `Failed to start cloudflared: ${err.message}. Is it installed and on PATH?`
+    proc.on('error', (err) => {
+      state.lastError = `Failed to start cloudflared: ${err.message}. Is it installed and on PATH?`
+      if (state.proc === proc) state.proc = null
+      state.startedAt = null
       if (!resolved) {
         resolved = true
-        resolve({ error: lastError })
+        resolve({ error: state.lastError })
       }
     })
 
-    tunnelProc.on('exit', (code) => {
+    proc.on('exit', (code) => {
       if (!resolved) {
         resolved = true
-        if (code !== 0 && !publicUrl) {
-          lastError = `cloudflared exited with code ${code} before producing a URL. Check installation.`
-          resolve({ error: lastError })
+        if (code !== 0 && !state.publicUrl) {
+          state.lastError = `cloudflared exited with code ${code} before producing a URL. Check installation.`
+          resolve({ error: state.lastError })
         } else {
           resolve({ error: 'tunnel exited unexpectedly' })
         }
       }
-      tunnelProc = null
-      publicUrl = null
-      startedAt = null
+      if (state.proc === proc) {
+        state.proc = null
+        state.publicUrl = null
+        state.startedAt = null
+      }
     })
 
-    // Timeout: if no URL after 15s, return but keep trying
+    // Timeout: stop cleanly so status polling cannot remain stuck on "starting".
     setTimeout(() => {
       if (!resolved) {
         resolved = true
-        if (publicUrl) {
-          resolve({ url: publicUrl })
+        if (state.publicUrl) {
+          resolve({ url: state.publicUrl })
         } else {
-          resolve({ error: 'Tunnel started but no URL detected yet. Cloudflared may still be connecting.' })
+          state.lastError = 'Cloudflare tunnel timed out before producing a public URL.'
+          if (state.proc === proc) state.proc = null
+          state.startedAt = null
+          if (proc.exitCode === null && !proc.killed) {
+            proc.kill('SIGTERM')
+          }
+          resolve({ error: state.lastError })
         }
       }
     }, 15_000)
   })
 }
 
+function resolveCloudflaredCommand(): string {
+  const candidates = [
+    process.env.CLOUDFLARED_PATH,
+    process.env['ProgramFiles(x86)'] && `${process.env['ProgramFiles(x86)']}\\cloudflared\\cloudflared.exe`,
+    process.env.ProgramFiles && `${process.env.ProgramFiles}\\cloudflared\\cloudflared.exe`,
+  ]
+
+  return candidates.find((candidate): candidate is string => !!candidate && existsSync(candidate)) ?? 'cloudflared'
+}
+
 export function stopTunnel(): boolean {
-  if (!tunnelProc || tunnelProc.killed) {
-    tunnelProc = null
-    publicUrl = null
-    startedAt = null
+  if (!state.proc || state.proc.exitCode !== null || state.proc.killed) {
+    state.proc = null
+    state.publicUrl = null
+    state.startedAt = null
     return false
   }
+  const proc = state.proc
   try {
-    tunnelProc.kill('SIGTERM')
+    proc.kill('SIGTERM')
     // Give it 2s, then force kill
     setTimeout(() => {
-      if (tunnelProc && !tunnelProc.killed) {
-        tunnelProc.kill('SIGKILL')
+      if (proc.exitCode === null && !proc.killed) {
+        proc.kill('SIGKILL')
       }
     }, 2000)
   } catch {
     // ignore
   }
-  tunnelProc = null
-  publicUrl = null
-  startedAt = null
+  state.proc = null
+  state.publicUrl = null
+  state.startedAt = null
   return true
 }
