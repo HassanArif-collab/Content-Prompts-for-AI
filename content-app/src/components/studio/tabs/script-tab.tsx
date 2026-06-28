@@ -20,7 +20,7 @@ import {
   countWords, estimateRuntimeMinutes, formatRuntime,
 } from '@/lib/studio-utils'
 import { InlineEditor } from '../InlineEditor'
-import { BlockEditor } from '../BlockEditor'
+import { RichBlockEditor } from '../RichBlockEditor'
 import { SourceSidebar } from '../SourceSidebar'
 import type { Project, ScriptSection, Source } from '../project-workspace'
 
@@ -226,7 +226,7 @@ export function ScriptTab({ project, onChange }: {
                 {/* Section content — single block editor; clean render by default,
                     raw markers only while editing. No separate preview box. */}
                 <div className="px-5 py-4">
-                  <BlockEditor
+                  <RichBlockEditor
                     value={s.content}
                     onSave={(v) => saveField(s.id, 'content', v)}
                     onFootnoteClick={handleFootnoteClick}

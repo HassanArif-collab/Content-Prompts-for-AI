@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { InlineEditor } from './InlineEditor'
+import { AssetDock } from './AssetDock'
 import {
   GripVertical, MoreHorizontal, Play, Copy, Check,
   Sparkles, Loader2, Image as ImageIcon, Video,
