@@ -24,6 +24,8 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -43,73 +45,79 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Notion-faithful tokens. Light = :root, dark = .dark (toggled by ThemeToggle).
+   Pure neutral: the only non-gray is the functional spoken-line --highlight. */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --radius: 0.5rem;
+  --background: #ffffff;
+  --foreground: #373530;
+  --card: #ffffff;
+  --card-foreground: #373530;
+  --popover: #ffffff;
+  --popover-foreground: #373530;
+  --primary: #373530;
+  --primary-foreground: #ffffff;
+  --secondary: #efefed;
+  --secondary-foreground: #373530;
+  --muted: #f1f1ef;
+  --muted-foreground: #787774;
+  --accent: #efefed;
+  --accent-foreground: #373530;
+  --destructive: #c4554d;
+  --border: #e9e9e7;
+  --input: #e9e9e7;
+  --ring: #c9c9c5;
+  --highlight: #faf3dd;
+  --highlight-foreground: #373530;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f7f7f5;
+  --sidebar-foreground: #373530;
+  --sidebar-primary: #373530;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #efefed;
+  --sidebar-accent-foreground: #373530;
+  --sidebar-border: #e9e9e7;
+  --sidebar-ring: #c9c9c5;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: #191919;
+  --foreground: #d4d4d4;
+  --card: #202020;
+  --card-foreground: #d4d4d4;
+  --popover: #252525;
+  --popover-foreground: #d4d4d4;
+  --primary: #d4d4d4;
+  --primary-foreground: #191919;
+  --secondary: #252525;
+  --secondary-foreground: #d4d4d4;
+  --muted: #252525;
+  --muted-foreground: #9b9b9b;
+  --accent: #2c2c2c;
+  --accent-foreground: #d4d4d4;
+  --destructive: #df5452;
+  --border: #2c2c2c;
+  --input: #2c2c2c;
+  --ring: #4a4a4a;
+  --highlight: #372e20;
+  --highlight-foreground: #d4d4d4;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: #202020;
+  --sidebar-foreground: #d4d4d4;
+  --sidebar-primary: #d4d4d4;
+  --sidebar-primary-foreground: #191919;
+  --sidebar-accent: #2c2c2c;
+  --sidebar-accent-foreground: #d4d4d4;
+  --sidebar-border: #2c2c2c;
+  --sidebar-ring: #4a4a4a;
 }
 
 @layer base {
@@ -130,7 +138,7 @@
 /* Custom thin scrollbar for long lists */
 .studio-scroll {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 .studio-scroll::-webkit-scrollbar {
   width: 6px;
@@ -140,13 +148,11 @@
   background: transparent;
 }
 .studio-scroll::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--border));
+  background-color: var(--border);
   border-radius: 9999px;
 }
 
-/* Background texture for the dashboard */
+/* Notion is flat — no grain texture. Class kept as a no-op so markup needn't change. */
 .studio-grain {
-  background-image:
-    radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.04) 1px, transparent 0);
-  background-size: 22px 22px;
+  background-image: none;
 }

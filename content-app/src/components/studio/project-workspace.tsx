@@ -17,6 +17,7 @@ import { ProjectSettingsDialog } from './project-settings'
 import { AiAssistant } from './ai-assistant'
 import { AiSettingsDialog } from './ai-settings-dialog'
 import { TunnelBanner } from './tunnel-banner'
+import { ThemeToggle } from './theme-toggle'
 
 export interface ResearchNote {
   id: string; projectId: string; parentId: string | null; title: string; content: string;
@@ -55,6 +56,11 @@ export interface Project {
   scriptSections: ScriptSection[]
   tasks: Task[]
 }
+
+// Notion-style underline tabs: text triggers with a 2px active underline that
+// sits on the strip's bottom border. Overrides the default shadcn pill styling.
+const TAB_TRIGGER_CLS =
+  "text-sm flex-none h-auto -mb-px rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pt-2 pb-2.5 font-normal text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-foreground dark:data-[state=active]:bg-transparent"
 
 export function ProjectWorkspace() {
   const { view, backToDashboard } = useStudio()
@@ -116,6 +122,7 @@ export function ProjectWorkspace() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => setAiSettingsOpen(true)} className="text-muted-foreground" title="AI provider settings">
               <Cpu className="w-4 h-4 mr-1.5" />
               AI provider
@@ -134,14 +141,14 @@ export function ProjectWorkspace() {
         <main className="flex-1 min-w-0 overflow-y-auto studio-scroll">
           <div className="px-6 py-6 max-w-[1400px]">
             <Tabs value={tab} onValueChange={setTab}>
-              <TabsList className="bg-muted/40 h-10">
-                <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
-                <TabsTrigger value="research" className="text-sm">Research <span className="text-muted-foreground ml-1.5 text-xs">{project.researchNotes.length}</span></TabsTrigger>
-                <TabsTrigger value="script" className="text-sm">Script</TabsTrigger>
-                <TabsTrigger value="storyboard" className="text-sm">Storyboard <span className="text-muted-foreground ml-1.5 text-xs">{project.scenes.length}</span></TabsTrigger>
-                <TabsTrigger value="visual-plans" className="text-sm">Visual Plans</TabsTrigger>
-                <TabsTrigger value="sources" className="text-sm">Sources <span className="text-muted-foreground ml-1.5 text-xs">{project.sources.length}</span></TabsTrigger>
-                <TabsTrigger value="production" className="text-sm">Production <span className="text-muted-foreground ml-1.5 text-xs">{project.tasks.length}</span></TabsTrigger>
+              <TabsList className="bg-transparent h-auto w-full justify-start gap-5 rounded-none border-b border-border p-0">
+                <TabsTrigger value="overview" className={TAB_TRIGGER_CLS}>Overview</TabsTrigger>
+                <TabsTrigger value="research" className={TAB_TRIGGER_CLS}>Research <span className="text-muted-foreground ml-1.5 text-xs">{project.researchNotes.length}</span></TabsTrigger>
+                <TabsTrigger value="script" className={TAB_TRIGGER_CLS}>Script</TabsTrigger>
+                <TabsTrigger value="storyboard" className={TAB_TRIGGER_CLS}>Storyboard <span className="text-muted-foreground ml-1.5 text-xs">{project.scenes.length}</span></TabsTrigger>
+                <TabsTrigger value="visual-plans" className={TAB_TRIGGER_CLS}>Visual Plans</TabsTrigger>
+                <TabsTrigger value="sources" className={TAB_TRIGGER_CLS}>Sources <span className="text-muted-foreground ml-1.5 text-xs">{project.sources.length}</span></TabsTrigger>
+                <TabsTrigger value="production" className={TAB_TRIGGER_CLS}>Production <span className="text-muted-foreground ml-1.5 text-xs">{project.tasks.length}</span></TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="mt-6">
