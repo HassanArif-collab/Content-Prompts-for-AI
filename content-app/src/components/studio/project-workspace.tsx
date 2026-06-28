@@ -18,6 +18,7 @@ import { AiAssistant } from './ai-assistant'
 import { AiSettingsDialog } from './ai-settings-dialog'
 import { TunnelBanner } from './tunnel-banner'
 import { ThemeToggle } from './theme-toggle'
+import { CommandPalette } from './CommandPalette'
 
 export interface ResearchNote {
   id: string; projectId: string; parentId: string | null; title: string; content: string;
@@ -70,9 +71,21 @@ export function ProjectWorkspace() {
   const [tab, setTab] = useState('overview')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
+  const [cmdOpen, setCmdOpen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
   const triggerReload = () => setReloadKey(k => k + 1)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setCmdOpen(v => !v)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -97,7 +110,25 @@ export function ProjectWorkspace() {
   if (loading || !project) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
         <div className="text-muted-foreground text-sm">Loading project…</div>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
       </div>
     )
   }
@@ -119,7 +150,25 @@ export function ProjectWorkspace() {
             <div className="min-w-0 flex items-center gap-2">
               <Film className="w-4 h-4 text-amber-500 shrink-0" />
               <h1 className="font-editorial text-base font-semibold truncate">{project.title}</h1>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
             </div>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -131,7 +180,25 @@ export function ProjectWorkspace() {
               <Settings2 className="w-4 h-4 mr-1.5" />
               Settings
             </Button>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
           </div>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
         </div>
       </header>
 
@@ -173,6 +240,15 @@ export function ProjectWorkspace() {
                 <ProductionTab project={project} onChange={triggerReload} />
               </TabsContent>
             </Tabs>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
           </div>
         </main>
 
@@ -182,6 +258,15 @@ export function ProjectWorkspace() {
         <aside className="w-[420px] shrink-0 hidden md:flex flex-col min-h-0">
           <AiAssistant projectId={project.id} projectTitle={project.title} />
         </aside>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
       </div>
 
       <ProjectSettingsDialog
@@ -195,6 +280,15 @@ export function ProjectWorkspace() {
         open={aiSettingsOpen}
         onOpenChange={setAiSettingsOpen}
       />
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={[
+        { id: "tab-overview", label: "Go to Overview", action: () => setTab("overview") },
+        { id: "tab-research", label: "Go to Research", action: () => setTab("research") },
+        { id: "tab-script", label: "Go to Script", action: () => setTab("script") },
+        { id: "tab-storyboard", label: "Go to Storyboard", action: () => setTab("storyboard") },
+        { id: "tab-visual-plans", label: "Go to Visual Plans", action: () => setTab("visual-plans") },
+        { id: "tab-sources", label: "Go to Sources", action: () => setTab("sources") },
+        { id: "tab-production", label: "Go to Production", action: () => setTab("production") },
+      ]} />
     </div>
   )
 }

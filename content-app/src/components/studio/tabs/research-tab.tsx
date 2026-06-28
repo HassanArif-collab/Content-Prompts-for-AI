@@ -21,10 +21,10 @@ import type { Project, ResearchNote } from '../project-workspace'
 
 const CATEGORIES = [
   { value: 'general', label: 'General', color: 'bg-muted text-muted-foreground' },
-  { value: 'interview', label: 'Interview', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
-  { value: 'archival', label: 'Archival', color: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
-  { value: 'context', label: 'Context', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
-  { value: 'fact-check', label: 'Fact-check', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+  { value: 'interview', label: 'Interview', color: 'bg-muted text-muted-foreground' },
+  { value: 'archival', label: 'Archival', color: 'bg-muted text-muted-foreground' },
+  { value: 'context', label: 'Context', color: 'bg-muted text-muted-foreground' },
+  { value: 'fact-check', label: 'Fact-check', color: 'bg-muted text-muted-foreground' },
 ]
 
 export function ResearchTab({ project, onChange }: {
@@ -193,12 +193,12 @@ function TopicNode({ note, childNotes, matches, projectId, onChange, onAddChild,
             <Link2 className="w-4 h-4" />
           </a>
         ) : (
-          <Folder className="w-4 h-4 text-amber-500/80 shrink-0" />
+          <Folder className="w-4 h-4 text-muted-foreground/80 shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm font-medium" placeholder="Topic title..." />
         </div>
-        {note.pinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" />}
+        {note.pinned && <Pin className="w-3 h-3 text-muted-foreground shrink-0" />}
         <Badge variant="outline" className={`text-[10px] uppercase hidden sm:inline-flex ${cat.color}`}>{cat.label}</Badge>
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button onClick={() => setAddingChild(true)} className="p-1 rounded hover:bg-muted text-muted-foreground" title="Add sub-item">
@@ -265,7 +265,7 @@ function ChildRow({ note, onSaveField, onDelete }: {
       <div className="flex-1 min-w-0">
         <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm text-foreground/80" placeholder="Title..." />
       </div>
-      {note.pinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" />}
+      {note.pinned && <Pin className="w-3 h-3 text-muted-foreground shrink-0" />}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
         <button onClick={() => onDelete(note)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" title="Delete">
           <Trash2 className="w-3 h-3" />
@@ -318,7 +318,7 @@ function AiResearchInline({ projectId, onResearched, onClose }: {
   return (
     <Card className="p-4 border-amber-500/30 bg-amber-500/5">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium flex items-center gap-2"><Globe className="w-4 h-4 text-amber-500" /> AI Research</h4>
+        <h4 className="text-sm font-medium flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /> AI Research</h4>
         <button onClick={onClose} className="p-1 rounded hover:bg-muted"><span className="text-xs">Close</span></button>
       </div>
       <div className="flex items-center gap-2 mb-2">

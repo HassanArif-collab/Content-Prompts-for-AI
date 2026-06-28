@@ -159,7 +159,7 @@ export function OverviewTab({ project, onOpenTab }: {
               <Progress value={taskProgress} className="h-2 mb-4" />
               <div className="space-y-2 text-sm">
                 <TaskStatusLine icon={<Circle className="w-3.5 h-3.5 text-muted-foreground" />} label="To do" count={project.tasks.filter(t => t.status === 'todo').length} />
-                <TaskStatusLine icon={<AlertCircle className="w-3.5 h-3.5 text-amber-500" />} label="In progress" count={project.tasks.filter(t => t.status === 'in-progress').length} />
+                <TaskStatusLine icon={<AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />} label="In progress" count={project.tasks.filter(t => t.status === 'in-progress').length} />
                 <TaskStatusLine icon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />} label="Done" count={tasksDone} />
                 <TaskStatusLine icon={<AlertCircle className="w-3.5 h-3.5 text-destructive" />} label="Blocked" count={project.tasks.filter(t => t.status === 'blocked').length} />
               </div>

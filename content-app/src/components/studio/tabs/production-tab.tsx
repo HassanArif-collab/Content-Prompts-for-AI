@@ -21,27 +21,27 @@ import {
 import type { Project, Task } from '../project-workspace'
 
 const CATEGORIES = [
-  { value: 'research', label: 'Research', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
-  { value: 'filming', label: 'Filming', color: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
-  { value: 'editing', label: 'Editing', color: 'bg-orange-500/15 text-orange-700 dark:text-orange-300' },
-  { value: 'graphics', label: 'Graphics', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
-  { value: 'sound', label: 'Sound', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
-  { value: 'licensing', label: 'Licensing', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
-  { value: 'publish', label: 'Publish', color: 'bg-teal-500/15 text-teal-700 dark:text-teal-300' },
+  { value: 'research', label: 'Research', color: 'bg-muted text-muted-foreground' },
+  { value: 'filming', label: 'Filming', color: 'bg-muted text-muted-foreground' },
+  { value: 'editing', label: 'Editing', color: 'bg-muted text-muted-foreground' },
+  { value: 'graphics', label: 'Graphics', color: 'bg-muted text-muted-foreground' },
+  { value: 'sound', label: 'Sound', color: 'bg-muted text-muted-foreground' },
+  { value: 'licensing', label: 'Licensing', color: 'bg-muted text-muted-foreground' },
+  { value: 'publish', label: 'Publish', color: 'bg-muted text-muted-foreground' },
   { value: 'general', label: 'General', color: 'bg-muted text-muted-foreground' },
 ]
 
 const STATUSES = [
   { value: 'todo', label: 'To do', icon: Circle, color: 'text-muted-foreground', colColor: 'border-t-muted-foreground/40' },
-  { value: 'in-progress', label: 'In progress', icon: AlertCircle, color: 'text-amber-500', colColor: 'border-t-amber-500/60' },
+  { value: 'in-progress', label: 'In progress', icon: AlertCircle, color: 'text-muted-foreground', colColor: 'border-t-amber-500/60' },
   { value: 'blocked', label: 'Blocked', icon: AlertCircle, color: 'text-destructive', colColor: 'border-t-destructive/60' },
   { value: 'done', label: 'Done', icon: CheckCircle2, color: 'text-emerald-500', colColor: 'border-t-emerald-500/60' },
 ]
 
 const PRIORITIES = [
   { value: 'low', label: 'Low', color: 'bg-muted text-muted-foreground' },
-  { value: 'medium', label: 'Medium', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
-  { value: 'high', label: 'High', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
+  { value: 'medium', label: 'Medium', color: 'bg-muted text-muted-foreground' },
+  { value: 'high', label: 'High', color: 'bg-muted text-muted-foreground' },
 ]
 
 export function ProductionTab({ project, onChange }: {
@@ -85,7 +85,7 @@ export function ProductionTab({ project, onChange }: {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-4">
             <StatPill label="To do" count={byStatus.todo.length} color="text-muted-foreground" />
-            <StatPill label="In progress" count={byStatus['in-progress'].length} color="text-amber-500" />
+            <StatPill label="In progress" count={byStatus['in-progress'].length} color="text-muted-foreground" />
             <StatPill label="Blocked" count={byStatus.blocked.length} color="text-destructive" />
             <StatPill label="Done" count={byStatus.done.length} color="text-emerald-500" />
           </div>

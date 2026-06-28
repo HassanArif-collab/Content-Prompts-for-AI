@@ -159,7 +159,7 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
                 size="icon"
                 variant="ghost"
                 onClick={() => setOpen(true)}
-                className="bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
+                className="bg-gradient-to-br bg-muted hover:from-amber-600 hover:to-orange-700 text-white shadow-md "
               >
                 <PanelRightOpen className="w-4 h-4" />
               </Button>
@@ -176,9 +176,9 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
   return (
     <div className="flex flex-col h-full w-full bg-background border-l border-border/60">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/60 bg-gradient-to-r from-amber-500/10 to-orange-500/5 flex items-center justify-between gap-2 shrink-0">
+      <div className="px-4 py-3 border-b border-border/60 bg-gradient-to-r bg-muted/20 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-md bg-gradient-to-br bg-muted flex items-center justify-center shrink-0">
             <Bot className="w-4 h-4 text-white" />
           </div>
           <div className="min-w-0">
@@ -233,7 +233,7 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
               disabled={streaming}
               className="shrink-0 text-xs px-2.5 py-1.5 rounded-md border border-border/60 bg-background hover:bg-muted transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              <q.icon className="w-3 h-3 text-amber-500" />
+              <q.icon className="w-3 h-3 text-muted-foreground" />
               {q.label}
             </button>
           ))}
@@ -261,7 +261,7 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
               <X className="w-4 h-4" />
             </Button>
           ) : (
-            <Button onClick={() => send(input)} disabled={!input.trim()} size="icon" className="h-10 w-10 shrink-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+            <Button onClick={() => send(input)} disabled={!input.trim()} size="icon" className="h-10 w-10 shrink-0 bg-gradient-to-br bg-muted hover:from-amber-600 hover:to-orange-700">
               <Send className="w-4 h-4" />
             </Button>
           )}
@@ -277,8 +277,8 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
 function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-8">
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 flex items-center justify-center mb-4">
-        <Wand2 className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br bg-muted flex items-center justify-center mb-4">
+        <Wand2 className="w-7 h-7 text-muted-foreground" />
       </div>
       <h3 className="font-editorial text-lg font-semibold mb-1.5">Your AI co-pilot</h3>
       <p className="text-sm text-muted-foreground max-w-xs mb-6">
@@ -292,7 +292,7 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
             className="text-left p-3 rounded-lg border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/5 transition-all flex items-start gap-2.5"
           >
             <div className="w-7 h-7 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
-              <q.icon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <q.icon className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
               <div className="text-sm font-medium">{q.label}</div>
@@ -320,7 +320,7 @@ function MessageBubble({ message, streaming }: { message: Message; streaming: bo
   const isUser = message.role === 'user'
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-      <div className={`w-7 h-7 rounded-md shrink-0 flex items-center justify-center ${isUser ? 'bg-muted' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`}>
+      <div className={`w-7 h-7 rounded-md shrink-0 flex items-center justify-center ${isUser ? 'bg-muted' : 'bg-gradient-to-br bg-muted'}`}>
         {isUser ? <User className="w-3.5 h-3.5 text-muted-foreground" /> : <Bot className="w-3.5 h-3.5 text-white" />}
       </div>
       <div className={`flex-1 min-w-0 ${isUser ? 'text-right' : ''}`}>

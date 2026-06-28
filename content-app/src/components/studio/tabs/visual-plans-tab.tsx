@@ -33,10 +33,10 @@ interface VisualPlan {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground border-border',
-  in_review: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-  approved: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-  changes_requested: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
-  rendered: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30',
+  in_review: 'bg-muted text-muted-foreground border-amber-500/30',
+  approved: 'bg-muted text-muted-foreground border-emerald-500/30',
+  changes_requested: 'bg-muted text-muted-foreground border-rose-500/30',
+  rendered: 'bg-muted text-muted-foreground border-violet-500/30',
 }
 
 const BOARD_COLUMNS = ['draft', 'in_review', 'approved', 'rendered']

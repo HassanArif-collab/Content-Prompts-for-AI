@@ -100,7 +100,7 @@ export function Dashboard() {
       <header className="border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br bg-muted flex items-center justify-center shadow-lg ">
               <Film className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -283,7 +283,7 @@ function EmptyState({ onSeed, seedLoading }: { onSeed: () => void; seedLoading: 
   return (
     <Card className="border-dashed border-border/60 p-12 text-center">
       <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 flex items-center justify-center mb-4">
-        <Film className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+        <Film className="w-7 h-7 text-muted-foreground" />
       </div>
       <h3 className="font-editorial text-xl font-semibold mb-1.5">No projects yet</h3>
       <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
