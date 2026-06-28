@@ -1,54 +1,181 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog'
-import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Clock, FileText, ArrowUp, ArrowDown, GripVertical, Sparkles, Loader2, Check } from 'lucide-react'
+import {
+  Plus, Trash2, Clock, FileText, ArrowUp, ArrowDown, GripVertical,
+  Sparkles, Loader2, Check, X,
+} from 'lucide-react'
 import {
   countWords, estimateRuntimeMinutes, formatRuntime,
 } from '@/lib/studio-utils'
-import type { Project, ScriptSection } from '../project-workspace'
+import { InlineEditor } from '../InlineEditor'
+import { SourceSidebar } from '../SourceSidebar'
+import type { Project, ScriptSection, Source } from '../project-workspace'
 
 const SECTION_TYPES = [
-  { value: 'hook', label: 'Hook (cold open)', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
+  { value: 'hook', label: 'Hook', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
   { value: 'act', label: 'Act', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
   { value: 'transition', label: 'Transition', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
   { value: 'outro', label: 'Outro', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
 ]
 
+// ─── Parse [HIGHLIGHT] tags and [N] footnotes ────────────────────
+
+interface ParsedSegment {
+  type: 'text' | 'highlight' | 'footnote'
+  content: string
+  footnoteNum?: number
+}
+
+function parseScriptContent(text: string): ParsedSegment[] {
+  const segments: ParsedSegment[] = []
+  const regex = /\[HIGHLIGHT\](.*?)\[\/HIGHLIGHT\]|\[(\d+)\]/gi
+  let lastIndex = 0
+  let match
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'text', content: text.slice(lastIndex, match.index) })
+    }
+    if (match[1] !== undefined) {
+      segments.push({ type: 'highlight', content: match[1] })
+    } else if (match[2] !== undefined) {
+      segments.push({ type: 'footnote', content: match[0], footnoteNum: parseInt(match[2]) })
+    }
+    lastIndex = regex.lastIndex
+  }
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', content: text.slice(lastIndex) })
+  }
+  return segments
+}
+
+function renderParsedContent(text: string, onFootnoteClick: (num: number) => void) {
+  const segments = parseScriptContent(text)
+  return segments.map((seg, i) => {
+    if (seg.type === 'highlight') {
+      return <span key={i} className="bg-yellow-300/30 px-0.5 rounded">{seg.content}</span>
+    }
+    if (seg.type === 'footnote' && seg.footnoteNum) {
+      return (
+        <button key={i} onClick={() => onFootnoteClick(seg.footnoteNum!)}
+          className="inline-flex items-center justify-center w-5 h-5 mx-0.5 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/40 transition-colors align-super cursor-pointer"
+          title={`Source ${seg.footnoteNum}`}>
+          {seg.footnoteNum}
+        </button>
+      )
+    }
+    return <span key={i}>{seg.content}</span>
+  })
+}
+
+// ─── Main Script Tab ─────────────────────────────────────────────
+
 export function ScriptTab({ project, onChange }: {
   project: Project
   onChange: () => void
 }) {
-  const [editing, setEditing] = useState<ScriptSection | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [expanding, setExpanding] = useState<ScriptSection | null>(null)
+  const [addingSection, setAddingSection] = useState(false)
+  const [newHeading, setNewHeading] = useState('')
+  const [newType, setNewType] = useState('act')
+  const [activeSource, setActiveSource] = useState<Source | null>(null)
+  const [expandingId, setExpandingId] = useState<string | null>(null)
+  const [expandInstruction, setExpandInstruction] = useState('')
+  const [expandResult, setExpandResult] = useState('')
+  const [expandLoading, setExpandLoading] = useState(false)
 
   const sections = useMemo(
     () => [...project.scriptSections].sort((a, b) => a.order - b.order),
     [project.scriptSections]
   )
-
   const totalWords = sections.reduce((s, sec) => s + countWords(sec.content), 0)
   const totalMinutes = estimateRuntimeMinutes(totalWords, project.narrationWpm)
   const targetMinutes = project.targetRuntime
   const targetProgress = targetMinutes > 0 ? Math.min(100, Math.round((totalMinutes / targetMinutes) * 100)) : 0
   const targetWords = Math.round(targetMinutes * project.narrationWpm)
+  const sources = project.sources
+
+  const handleFootnoteClick = useCallback((num: number) => {
+    const source = sources[num - 1]
+    if (source) setActiveSource(source)
+    else toast.error('Source not found')
+  }, [sources])
+
+  async function saveField(sectionId: string, field: string, value: string) {
+    await fetch(`/api/projects/${project.id}/script/${sectionId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    onChange()
+  }
+
+  async function addSection() {
+    if (!newHeading.trim()) return
+    await fetch(`/api/projects/${project.id}/script`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ heading: newHeading, type: newType, content: '' }),
+    })
+    setNewHeading(''); setAddingSection(false)
+    toast.success('Section added')
+    onChange()
+  }
+
+  async function deleteSection(sectionId: string) {
+    await fetch(`/api/projects/${project.id}/script/${sectionId}`, { method: 'DELETE' })
+    toast.success('Section deleted')
+    onChange()
+  }
+
+  async function reorder(dir: 'up' | 'down', index: number) {
+    const section = sections[index]
+    const swapWith = dir === 'up' ? sections[index - 1] : sections[index + 1]
+    if (!swapWith) return
+    await fetch(`/api/projects/${project.id}/script/${section.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: swapWith.order }),
+    })
+    await fetch(`/api/projects/${project.id}/script/${swapWith.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: section.order }),
+    })
+    onChange()
+  }
+
+  async function generateExpansion(section: ScriptSection) {
+    setExpandLoading(true); setExpandResult('')
+    try {
+      const res = await fetch('/api/ai/expand-script', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id, sectionId: section.id, instruction: expandInstruction || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'AI failed')
+      setExpandResult(data.content)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'AI failed')
+    } finally { setExpandLoading(false) }
+  }
+
+  async function applyExpansion(section: ScriptSection) {
+    if (!expandResult) return
+    await fetch(`/api/projects/${project.id}/script/${section.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: section.content + '\n\n' + expandResult }),
+    })
+    toast.success('AI text appended')
+    setExpandingId(null); setExpandResult(''); setExpandInstruction('')
+    onChange()
+  }
 
   return (
     <div className="space-y-5">
@@ -63,8 +190,7 @@ export function ScriptTab({ project, onChange }: {
           <div>
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estimated runtime</div>
             <div className="font-editorial text-3xl font-bold tabular-nums flex items-center gap-2">
-              <Clock className="w-5 h-5 text-muted-foreground" />
-              {formatRuntime(totalMinutes)}
+              <Clock className="w-5 h-5 text-muted-foreground" />{formatRuntime(totalMinutes)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">at {project.narrationWpm} wpm</div>
           </div>
@@ -81,372 +207,130 @@ export function ScriptTab({ project, onChange }: {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between">
-        <h3 className="font-editorial text-lg font-semibold">Script sections</h3>
-        <Button onClick={() => setCreating(true)}>
-          <Plus className="w-4 h-4 mr-1.5" /> Add section
-        </Button>
-      </div>
-
+      {/* Script sections — inline editing, no popups */}
       {sections.length === 0 ? (
         <Card className="border-dashed p-10 text-center">
           <FileText className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
           <h3 className="font-editorial text-lg font-semibold mb-1">No script sections yet</h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-            Break your documentary into beats — hook, acts, transitions, outro. Each section's word count feeds the runtime estimator above.
+            Break your documentary into beats. Click any text to edit it inline. Use [HIGHLIGHT]...[/HIGHLIGHT] for spoken parts and [1], [2] for footnotes.
           </p>
-          <Button onClick={() => setCreating(true)}>
+          <Button onClick={() => setAddingSection(true)}>
             <Plus className="w-4 h-4 mr-1.5" /> Add first section
           </Button>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {sections.map((s, i) => (
-            <SectionCard
-              key={s.id}
-              section={s}
-              index={i}
-              canMoveUp={i > 0}
-              canMoveDown={i < sections.length - 1}
-              narrationWpm={project.narrationWpm}
-              onEdit={() => setEditing(s)}
-              onExpand={() => setExpanding(s)}
-              onChange={onChange}
-              onReorder={async (dir: 'up' | 'down') => {
-                const swapWith = dir === 'up' ? sections[i - 1] : sections[i + 1]
-                if (!swapWith) return
-                await fetch(`/api/projects/${project.id}/script/${s.id}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ order: swapWith.order }),
-                })
-                await fetch(`/api/projects/${project.id}/script/${swapWith.id}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ order: s.order }),
-                })
-                onChange()
-              }}
-            />
-          ))}
+        <div className="space-y-4">
+          {sections.map((s, i) => {
+            const type = SECTION_TYPES.find(t => t.value === s.type) ?? SECTION_TYPES[1]
+            const words = countWords(s.content)
+            const minutes = estimateRuntimeMinutes(words, project.narrationWpm)
+            return (
+              <Card key={s.id} className="border-border/60 overflow-hidden">
+                {/* Section header — inline editable */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-border/40 bg-muted/20">
+                  <div className="flex flex-col gap-0.5">
+                    <button onClick={() => reorder('up', i)} disabled={i === 0} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label="Move up">
+                      <ArrowUp className="w-3 h-3" />
+                    </button>
+                    <GripVertical className="w-3 h-3 text-muted-foreground/40" />
+                    <button onClick={() => reorder('down', i)} disabled={i === sections.length - 1} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label="Move down">
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <span className="text-xs text-muted-foreground tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                  <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${type.color}`}>{type.label}</Badge>
+                  <div className="flex-1 min-w-0">
+                    <InlineEditor value={s.heading} onSave={(v) => saveField(s.id, 'heading', v)} className="font-editorial text-base font-semibold" placeholder="Section heading..." />
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-xs text-muted-foreground tabular-nums">{words.toLocaleString()} words</div>
+                    <div className="text-xs font-medium tabular-nums">{formatRuntime(minutes)}</div>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button onClick={() => setExpandingId(expandingId === s.id ? null : s.id)} className="p-1.5 rounded hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400" aria-label="Expand with AI">
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Expand with AI</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <button onClick={() => deleteSection(s.id)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive" aria-label="Delete">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Section content — inline editable */}
+                <div className="px-5 py-4">
+                  <InlineEditor value={s.content} onSave={(v) => saveField(s.id, 'content', v)} multiline className="text-sm leading-relaxed min-h-[60px]" placeholder="Write narration here. Use [HIGHLIGHT]...[/HIGHLIGHT] for spoken parts and [1], [2] for footnotes." showSaveIndicator />
+                  
+                  {/* Rendered preview with yellow highlighting + footnote chips */}
+                  {s.content && (
+                    <div className="mt-3 pt-3 border-t border-border/30 text-sm leading-relaxed">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Preview with highlighting</div>
+                      <div className="whitespace-pre-wrap">{renderParsedContent(s.content, handleFootnoteClick)}</div>
+                    </div>
+                  )}
+
+                  {/* AI Expand panel (inline, not a dialog) */}
+                  {expandingId === s.id && (
+                    <div className="mt-4 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-500" /> Expand with AI
+                        </h4>
+                        <button onClick={() => { setExpandingId(null); setExpandResult(''); setExpandInstruction('') }} className="p-1 rounded hover:bg-muted">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <input type="text" value={expandInstruction} onChange={(e) => setExpandInstruction(e.target.value)} placeholder="Optional: Add specific instruction for the AI..." className="w-full text-sm px-3 py-2 rounded border border-border bg-background" />
+                      <Button onClick={() => generateExpansion(s)} disabled={expandLoading} variant="outline" size="sm">
+                        {expandLoading ? <><Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Generating...</> : <><Sparkles className="w-3 h-3 mr-1.5" /> {expandResult ? 'Regenerate' : 'Generate'}</>}
+                      </Button>
+                      {expandResult && (
+                        <div className="space-y-2">
+                          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 max-h-48 overflow-y-auto studio-scroll text-sm whitespace-pre-wrap">{expandResult}</div>
+                          <div className="flex gap-2">
+                            <Button onClick={() => applyExpansion(s)} size="sm" className="bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white">
+                              <Check className="w-3 h-3 mr-1" /> Append to section
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )
+          })}
+
+          {/* Add section inline */}
+          {addingSection ? (
+            <Card className="p-5 border-dashed border-amber-500/40 bg-amber-500/5">
+              <div className="flex items-center gap-3">
+                <Select value={newType} onValueChange={setNewType}>
+                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SECTION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <input type="text" value={newHeading} onChange={(e) => setNewHeading(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addSection(); if (e.key === 'Escape') setAddingSection(false) }} placeholder="Section heading..." className="flex-1 text-sm px-3 py-2 rounded border border-border bg-background" autoFocus />
+                <Button onClick={addSection} size="sm">Add</Button>
+                <Button onClick={() => setAddingSection(false)} size="sm" variant="ghost">Cancel</Button>
+              </div>
+            </Card>
+          ) : (
+            <button onClick={() => setAddingSection(true)} className="w-full py-3 border border-dashed border-border/60 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-border transition-colors flex items-center justify-center gap-1.5">
+              <Plus className="w-4 h-4" /> Add section
+            </button>
+          )}
         </div>
       )}
 
-      <SectionDialog
-        open={creating || !!editing}
-        section={editing}
-        onOpenChange={(v) => { if (!v) { setCreating(false); setEditing(null) } }}
-        projectId={project.id}
-        onSaved={() => { setCreating(false); setEditing(null); onChange() }}
-      />
-
-      <ExpandSectionDialog
-        open={!!expanding}
-        section={expanding}
-        onOpenChange={(v) => { if (!v) setExpanding(null) }}
-        projectId={project.id}
-        onApplied={() => { setExpanding(null); onChange() }}
-      />
+      {/* Source sidebar */}
+      <SourceSidebar source={activeSource} onClose={() => setActiveSource(null)} />
     </div>
-  )
-}
-
-function SectionCard({ section, index, canMoveUp, canMoveDown, narrationWpm, onEdit, onExpand, onChange, onReorder }: {
-  section: ScriptSection
-  index: number
-  canMoveUp: boolean
-  canMoveDown: boolean
-  narrationWpm: number
-  onEdit: () => void
-  onExpand: () => void
-  onChange: () => void
-  onReorder: (dir: 'up' | 'down') => void
-}) {
-  const words = countWords(section.content)
-  const minutes = estimateRuntimeMinutes(words, narrationWpm)
-  const type = SECTION_TYPES.find(t => t.value === section.type) ?? SECTION_TYPES[1]
-
-  async function handleDelete() {
-    await fetch(`/api/projects/${section.projectId}/script/${section.id}`, { method: 'DELETE' })
-    toast.success('Section deleted')
-    onChange()
-  }
-
-  return (
-    <Card className="p-5 border-border/60">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="flex flex-col gap-0.5">
-            <button onClick={() => onReorder('up')} disabled={!canMoveUp} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label="Move up">
-              <ArrowUp className="w-3 h-3" />
-            </button>
-            <GripVertical className="w-3 h-3 text-muted-foreground/40" />
-            <button onClick={() => onReorder('down')} disabled={!canMoveDown} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30" aria-label="Move down">
-              <ArrowDown className="w-3 h-3" />
-            </button>
-          </div>
-          <span className="text-xs text-muted-foreground tabular-nums mt-0.5">{String(index + 1).padStart(2, '0')}</span>
-          <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${type.color}`}>{type.label}</Badge>
-          <h4 className="font-editorial text-base font-semibold truncate">{section.heading}</h4>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="text-right">
-            <div className="text-xs text-muted-foreground tabular-nums">{words.toLocaleString()} words</div>
-            <div className="text-xs font-medium tabular-nums">{formatRuntime(minutes)}</div>
-          </div>
-          <button onClick={onEdit} className="p-1.5 rounded hover:bg-muted text-muted-foreground" aria-label="Edit">
-            <Pencil className="w-4 h-4" />
-          </button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={onExpand} className="p-1.5 rounded hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400" aria-label="Expand with AI">
-                  <Sparkles className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Expand with AI</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <button onClick={handleDelete} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive" aria-label="Delete">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed pl-8">
-        {section.content || <span className="italic text-muted-foreground/60">No content yet.</span>}
-      </div>
-    </Card>
-  )
-}
-
-function SectionDialog({ open, section, onOpenChange, projectId, onSaved }: {
-  open: boolean
-  section: ScriptSection | null
-  onOpenChange: (v: boolean) => void
-  projectId: string
-  onSaved: () => void
-}) {
-  const [heading, setHeading] = useState(section?.heading ?? '')
-  const [content, setContent] = useState(section?.content ?? '')
-  const [type, setType] = useState(section?.type ?? 'act')
-  const [saving, setSaving] = useState(false)
-
-  const sectionId = section?.id ?? 'new'
-  const [lastId, setLastId] = useState(sectionId)
-  if (sectionId !== lastId) {
-    setLastId(sectionId)
-    setHeading(section?.heading ?? '')
-    setContent(section?.content ?? '')
-    setType(section?.type ?? 'act')
-  }
-
-  async function save() {
-    if (!heading.trim()) { toast.error('Heading is required'); return }
-    setSaving(true)
-    try {
-      if (section) {
-        await fetch(`/api/projects/${projectId}/script/${section.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ heading, content, type }),
-        })
-      } else {
-        await fetch(`/api/projects/${projectId}/script`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ heading, content, type }),
-        })
-      }
-      toast.success(section ? 'Section updated' : 'Section added')
-      onSaved()
-    } catch {
-      toast.error('Save failed')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const liveWords = countWords(content)
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-editorial">{section ? 'Edit section' : 'Add script section'}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="sec-heading">Heading</Label>
-              <Input id="sec-heading" value={heading} onChange={(e) => setHeading(e.target.value)} placeholder="e.g. ACT II — DIRECTIVE 14-C" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Type</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SECTION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="sec-content">Narration / content</Label>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {liveWords.toLocaleString()} words · {formatRuntime(estimateRuntimeMinutes(liveWords, 150))}
-              </span>
-            </div>
-            <Textarea
-              id="sec-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={14}
-              placeholder="Write the narration here. Press Enter twice for paragraph breaks. The word count updates the runtime estimate live."
-              className="font-mono text-sm leading-relaxed"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save section'}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function ExpandSectionDialog({ open, section, onOpenChange, projectId, onApplied }: {
-  open: boolean
-  section: ScriptSection | null
-  onOpenChange: (v: boolean) => void
-  projectId: string
-  onApplied: () => void
-}) {
-  const [instruction, setInstruction] = useState('')
-  const [result, setResult] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState<'replace' | 'append'>('replace')
-
-  const sectionId = section?.id ?? 'none'
-  const [lastId, setLastId] = useState(sectionId)
-  if (sectionId !== lastId) {
-    setLastId(sectionId)
-    setInstruction('')
-    setResult('')
-    setMode('replace')
-  }
-
-  async function generate() {
-    if (!section) return
-    setLoading(true)
-    setResult('')
-    try {
-      const res = await fetch('/api/ai/expand-script', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, sectionId: section.id, instruction: instruction || undefined }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'AI failed')
-      setResult(data.content)
-      toast.success('AI expansion ready')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'AI failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function apply() {
-    if (!section || !result) return
-    const newContent = mode === 'append' && section.content
-      ? section.content + '\n\n' + result
-      : result
-    await fetch(`/api/projects/${projectId}/script/${section.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: newContent }),
-    })
-    toast.success(mode === 'append' ? 'AI text appended' : 'Section updated with AI text')
-    onApplied()
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="font-editorial flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            Expand "{section?.heading}" with AI
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 overflow-y-auto studio-scroll flex-1 pr-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="ai-instruction">Optional instruction for the AI</Label>
-            <Input
-              id="ai-instruction"
-              value={instruction}
-              onChange={(e) => setInstruction(e.target.value)}
-              placeholder="e.g. Add a specific example from the 1943 archives, keep it under 200 words"
-            />
-            <p className="text-xs text-muted-foreground">
-              Leave blank to let the AI expand naturally based on the project context.
-            </p>
-          </div>
-
-          <Button onClick={generate} disabled={loading || !section} variant="outline">
-            {loading ? (
-              <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Generating…</>
-            ) : result ? (
-              <><Sparkles className="w-4 h-4 mr-1.5" /> Regenerate</>
-            ) : (
-              <><Sparkles className="w-4 h-4 mr-1.5" /> Generate expansion</>
-            )}
-          </Button>
-
-          {result && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>AI-generated narration</Label>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {countWords(result).toLocaleString()} words · {formatRuntime(estimateRuntimeMinutes(countWords(result), 150))}
-                </span>
-              </div>
-              <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 max-h-72 overflow-y-auto studio-scroll">
-                <div className="text-sm whitespace-pre-wrap leading-relaxed">{result}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Label className="text-xs">Apply mode:</Label>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setMode('replace')}
-                    className={`text-xs px-2.5 py-1 rounded ${mode === 'replace' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                  >
-                    Replace existing
-                  </button>
-                  <button
-                    onClick={() => setMode('append')}
-                    className={`text-xs px-2.5 py-1 rounded ${mode === 'append' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                  >
-                    Append to existing
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-          {result && (
-            <Button onClick={apply} className="bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white">
-              <Check className="w-4 h-4 mr-1.5" /> Apply to section
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
