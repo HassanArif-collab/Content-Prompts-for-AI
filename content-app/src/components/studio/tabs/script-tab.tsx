@@ -20,63 +20,24 @@ import {
   countWords, estimateRuntimeMinutes, formatRuntime,
 } from '@/lib/studio-utils'
 import { InlineEditor } from '../InlineEditor'
+import { BlockEditor } from '../BlockEditor'
 import { SourceSidebar } from '../SourceSidebar'
 import type { Project, ScriptSection, Source } from '../project-workspace'
 
 const SECTION_TYPES = [
-  { value: 'hook', label: 'Hook', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
-  { value: 'act', label: 'Act', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
-  { value: 'transition', label: 'Transition', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
-  { value: 'outro', label: 'Outro', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
+  { value: 'hook', label: 'Hook', color: 'bg-muted text-muted-foreground' },
+  { value: 'act', label: 'Act', color: 'bg-muted text-muted-foreground' },
+  { value: 'transition', label: 'Transition', color: 'bg-muted text-muted-foreground' },
+  { value: 'outro', label: 'Outro', color: 'bg-muted text-muted-foreground' },
 ]
 
-// ─── Parse [HIGHLIGHT] tags and [N] footnotes ────────────────────
-
-interface ParsedSegment {
-  type: 'text' | 'highlight' | 'footnote'
-  content: string
-  footnoteNum?: number
-}
-
-function parseScriptContent(text: string): ParsedSegment[] {
-  const segments: ParsedSegment[] = []
-  const regex = /\[HIGHLIGHT\](.*?)\[\/HIGHLIGHT\]|\[(\d+)\]/gi
-  let lastIndex = 0
-  let match
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      segments.push({ type: 'text', content: text.slice(lastIndex, match.index) })
-    }
-    if (match[1] !== undefined) {
-      segments.push({ type: 'highlight', content: match[1] })
-    } else if (match[2] !== undefined) {
-      segments.push({ type: 'footnote', content: match[0], footnoteNum: parseInt(match[2]) })
-    }
-    lastIndex = regex.lastIndex
-  }
-  if (lastIndex < text.length) {
-    segments.push({ type: 'text', content: text.slice(lastIndex) })
-  }
-  return segments
-}
-
-function renderParsedContent(text: string, onFootnoteClick: (num: number) => void) {
-  const segments = parseScriptContent(text)
-  return segments.map((seg, i) => {
-    if (seg.type === 'highlight') {
-      return <span key={i} className="bg-yellow-300/30 px-0.5 rounded">{seg.content}</span>
-    }
-    if (seg.type === 'footnote' && seg.footnoteNum) {
-      return (
-        <button key={i} onClick={() => onFootnoteClick(seg.footnoteNum!)}
-          className="inline-flex items-center justify-center w-5 h-5 mx-0.5 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/40 transition-colors align-super cursor-pointer"
-          title={`Source ${seg.footnoteNum}`}>
-          {seg.footnoteNum}
-        </button>
-      )
-    }
-    return <span key={i}>{seg.content}</span>
-  })
+// Next footnote number = highest [N] already in this section + 1.
+function nextFootnoteNumber(text: string): number {
+  let max = 0
+  const re = /\[(\d+)\]/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) max = Math.max(max, parseInt(m[1]))
+  return max + 1
 }
 
 // ─── Main Script Tab ─────────────────────────────────────────────
@@ -250,7 +211,7 @@ export function ScriptTab({ project, onChange }: {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button onClick={() => setExpandingId(expandingId === s.id ? null : s.id)} className="p-1.5 rounded hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400" aria-label="Expand with AI">
+                        <button onClick={() => setExpandingId(expandingId === s.id ? null : s.id)} className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground" aria-label="Expand with AI">
                           <Sparkles className="w-4 h-4" />
                         </button>
                       </TooltipTrigger>
@@ -262,24 +223,22 @@ export function ScriptTab({ project, onChange }: {
                   </button>
                 </div>
 
-                {/* Section content — inline editable */}
+                {/* Section content — single block editor; clean render by default,
+                    raw markers only while editing. No separate preview box. */}
                 <div className="px-5 py-4">
-                  <InlineEditor value={s.content} onSave={(v) => saveField(s.id, 'content', v)} multiline className="text-sm leading-relaxed min-h-[60px]" placeholder="Write narration here. Use [HIGHLIGHT]...[/HIGHLIGHT] for spoken parts and [1], [2] for footnotes." showSaveIndicator />
-                  
-                  {/* Rendered preview with yellow highlighting + footnote chips */}
-                  {s.content && (
-                    <div className="mt-3 pt-3 border-t border-border/30 text-sm leading-relaxed">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Preview with highlighting</div>
-                      <div className="whitespace-pre-wrap">{renderParsedContent(s.content, handleFootnoteClick)}</div>
-                    </div>
-                  )}
+                  <BlockEditor
+                    value={s.content}
+                    onSave={(v) => saveField(s.id, 'content', v)}
+                    onFootnoteClick={handleFootnoteClick}
+                    nextFootnote={nextFootnoteNumber(s.content)}
+                  />
 
                   {/* AI Expand panel (inline, not a dialog) */}
                   {expandingId === s.id && (
-                    <div className="mt-4 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-3">
+                    <div className="mt-4 p-4 rounded-lg border border-border bg-muted/40 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-amber-500" /> Expand with AI
+                          <Sparkles className="w-4 h-4 text-muted-foreground" /> Expand with AI
                         </h4>
                         <button onClick={() => { setExpandingId(null); setExpandResult(''); setExpandInstruction('') }} className="p-1 rounded hover:bg-muted">
                           <X className="w-4 h-4" />
@@ -291,9 +250,9 @@ export function ScriptTab({ project, onChange }: {
                       </Button>
                       {expandResult && (
                         <div className="space-y-2">
-                          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 max-h-48 overflow-y-auto studio-scroll text-sm whitespace-pre-wrap">{expandResult}</div>
+                          <div className="p-3 rounded-lg bg-muted/40 border border-border max-h-48 overflow-y-auto studio-scroll text-sm whitespace-pre-wrap">{expandResult}</div>
                           <div className="flex gap-2">
-                            <Button onClick={() => applyExpansion(s)} size="sm" className="bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white">
+                            <Button onClick={() => applyExpansion(s)} size="sm">
                               <Check className="w-3 h-3 mr-1" /> Append to section
                             </Button>
                           </div>
@@ -308,7 +267,7 @@ export function ScriptTab({ project, onChange }: {
 
           {/* Add section inline */}
           {addingSection ? (
-            <Card className="p-5 border-dashed border-amber-500/40 bg-amber-500/5">
+            <Card className="p-5 border-dashed border-border bg-muted/40">
               <div className="flex items-center gap-3">
                 <Select value={newType} onValueChange={setNewType}>
                   <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
