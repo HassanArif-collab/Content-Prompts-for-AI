@@ -156,3 +156,37 @@
 .studio-grain {
   background-image: none;
 }
+
+/* Notion-style script editor typography (the .script-editor class is on the
+   ProseMirror contenteditable surface). */
+.script-editor {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--foreground);
+}
+.script-editor p {
+  margin: 2px 0;
+}
+.script-editor h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.1rem 0 0.3rem;
+}
+.script-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0.9rem 0 0.25rem;
+}
+.script-editor h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0.75rem 0 0.2rem;
+}
+.script-editor hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.8rem 0;
+}

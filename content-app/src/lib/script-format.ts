@@ -1,13 +1,12 @@
 // Conversion between the stored marker format and a ProseMirror/Tiptap doc.
 //
-// Storage stays plain text with [HIGHLIGHT]…[/HIGHLIGHT] for spoken lines and
-// [N] for footnotes (no DB schema change). These functions are pure and have
-// no React/Tiptap dependency so the round-trip can be unit-tested in isolation
-// — important, because a bad round-trip would corrupt script text.
+// Storage stays plain text (no DB schema change):
+//   - [HIGHLIGHT]…[/HIGHLIGHT]  spoken lines
+//   - [N]                        footnotes
+//   - leading #, ##, ###         heading levels 1/2/3 (markdown-style)
 //
-// Model: each newline-separated line maps to one paragraph. Highlighted runs
-// are text nodes carrying a `highlight` mark; footnotes are atomic inline
-// `footnote` nodes with a `num` attr.
+// Pure, no React/Tiptap dependency, so the round-trip is unit-tested in
+// isolation — a bad round-trip would corrupt script text.
 
 export interface ParsedSegment {
   type: 'text' | 'highlight' | 'footnote'
@@ -45,19 +44,32 @@ export interface PMNode {
   content?: PMNode[]
 }
 
+function lineToInline(line: string): PMNode[] {
+  const inline: PMNode[] = []
+  for (const seg of parseScriptContent(line)) {
+    if (seg.type === 'footnote' && seg.footnoteNum != null) {
+      inline.push({ type: 'footnote', attrs: { num: seg.footnoteNum } })
+    } else if (seg.type === 'highlight') {
+      if (seg.content) inline.push({ type: 'text', text: seg.content, marks: [{ type: 'highlight' }] })
+    } else if (seg.content) {
+      inline.push({ type: 'text', text: seg.content })
+    }
+  }
+  return inline
+}
+
 export function markersToDoc(text: string): PMNode {
   const lines = (text ?? '').split('\n')
   const content: PMNode[] = lines.map((line) => {
-    const inline: PMNode[] = []
-    for (const seg of parseScriptContent(line)) {
-      if (seg.type === 'footnote' && seg.footnoteNum != null) {
-        inline.push({ type: 'footnote', attrs: { num: seg.footnoteNum } })
-      } else if (seg.type === 'highlight') {
-        if (seg.content) inline.push({ type: 'text', text: seg.content, marks: [{ type: 'highlight' }] })
-      } else if (seg.content) {
-        inline.push({ type: 'text', text: seg.content })
-      }
+    const heading = /^(#{1,3})\s+(.*)$/.exec(line)
+    if (heading) {
+      const level = heading[1].length
+      const inline = lineToInline(heading[2])
+      return inline.length
+        ? { type: 'heading', attrs: { level }, content: inline }
+        : { type: 'heading', attrs: { level } }
     }
+    const inline = lineToInline(line)
     return inline.length ? { type: 'paragraph', content: inline } : { type: 'paragraph' }
   })
   return { type: 'doc', content }
@@ -74,13 +86,17 @@ function inlineToText(node: PMNode): string {
   return node.text ?? ''
 }
 
-function paragraphToText(node: PMNode): string {
-  const text = (node.content ?? []).map(inlineToText).join('')
-  // Merge runs that ended up as adjacent highlight spans.
-  return text.replace(/\[\/HIGHLIGHT\]\[HIGHLIGHT\]/g, '')
+function blockToText(node: PMNode): string {
+  const inner = (node.content ?? []).map(inlineToText).join('').replace(/\[\/HIGHLIGHT\]\[HIGHLIGHT\]/g, '')
+  if (node.type === 'heading') {
+    const level = Math.min(3, Math.max(1, Number(node.attrs?.level ?? 1)))
+    return `${'#'.repeat(level)} ${inner}`
+  }
+  if (node.type === 'horizontalRule') return '---'
+  return inner
 }
 
 export function docToMarkers(doc: PMNode | null | undefined): string {
-  const paras = doc?.content ?? []
-  return paras.map(paragraphToText).join('\n')
+  const blocks = doc?.content ?? []
+  return blocks.map(blockToText).join('\n')
 }
