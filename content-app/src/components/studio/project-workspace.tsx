@@ -72,6 +72,7 @@ export function ProjectWorkspace() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
 
   const triggerReload = () => setReloadKey(k => k + 1)
@@ -192,8 +193,8 @@ export function ProjectWorkspace() {
         {/* Right: AI Co-pilot sidebar (fixed width, full height).
             Desktop-only — documentary editing is a desktop activity.
             The AiAssistant component handles its own collapse/expand inside this slot. */}
-        <aside className="w-[420px] shrink-0 hidden md:flex flex-col min-h-0">
-          <AiAssistant projectId={project.id} projectTitle={project.title} />
+        <aside className={`${aiOpen ? 'w-[420px]' : 'w-14'} shrink-0 hidden md:flex flex-col min-h-0 transition-[width] duration-200`}>
+          <AiAssistant projectId={project.id} projectTitle={project.title} open={aiOpen} onOpenChange={setAiOpen} />
         </aside>
       </div>
 

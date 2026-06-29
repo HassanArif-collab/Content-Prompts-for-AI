@@ -23,6 +23,8 @@ interface Message {
 interface AssistantProps {
   projectId: string
   projectTitle: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 const QUICK_PROMPTS = [
@@ -34,8 +36,8 @@ const QUICK_PROMPTS = [
 
 const BROWSE_PROMPT = { icon: Globe, label: 'Browse a website', prompt: 'I want you to browse a specific website for me. Ask me which URL, then open it with the browser tool and tell me what you find.' }
 
-export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
-  const [open, setOpen] = useState(true) // open by default — sidebar lives in layout
+export function AiAssistant({ projectId, projectTitle, open, onOpenChange }: AssistantProps) {
+  const setOpen = onOpenChange // controlled by the workspace so the aside can shrink
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)

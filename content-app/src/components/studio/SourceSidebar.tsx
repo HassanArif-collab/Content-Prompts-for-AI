@@ -29,7 +29,7 @@ interface SourceSidebarProps {
  */
 export function SourceSidebar({ sources, activeSource, onClose }: SourceSidebarProps) {
   const [expandedId, setExpandedId] = useState<string | null>(activeSource?.id ?? null)
-  const [preview, setPreview] = useState<{ title: string; text: string } | null>(null)
+  const [preview, setPreview] = useState<{ image?: string; title?: string; text?: string } | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [summary, setSummary] = useState('')
@@ -49,6 +49,16 @@ export function SourceSidebar({ sources, activeSource, onClose }: SourceSidebarP
     if (preview) return
     setPreviewLoading(true)
     try {
+      // Visual screenshot first; fall back to extracted text if it fails.
+      const shot = await fetch('/api/ai/screenshot', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      })
+      const shotData = await shot.json()
+      if (shotData.ok && shotData.image) {
+        setPreview({ image: shotData.image })
+        return
+      }
       const res = await fetch('/api/ai/read-url', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, draftSource: false }),
@@ -57,7 +67,7 @@ export function SourceSidebar({ sources, activeSource, onClose }: SourceSidebarP
       if (data.page?.text) {
         setPreview({ title: data.page.title || url, text: data.page.text })
       } else {
-        toast.error(data.error || 'Could not read this page')
+        toast.error(data.error || 'Could not preview this page')
         setShowPreview(false)
       }
     } catch {
@@ -159,8 +169,12 @@ export function SourceSidebar({ sources, activeSource, onClose }: SourceSidebarP
                     {showPreview && (
                       <div className="rounded border border-border/60 bg-muted/20 overflow-hidden">
                         {previewLoading ? (
-                          <div className="p-4 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Reading page…</div>
-                        ) : preview ? (
+                          <div className="p-4 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading preview…</div>
+                        ) : preview?.image ? (
+                          <div className="max-h-72 overflow-y-auto studio-scroll">
+                            <img src={`data:image/png;base64,${preview.image}`} alt="Page preview" className="w-full" />
+                          </div>
+                        ) : preview?.text ? (
                           <div className="max-h-64 overflow-y-auto studio-scroll p-3">
                             <div className="text-xs font-medium mb-1.5">{preview.title}</div>
                             <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{preview.text.slice(0, 2500)}{preview.text.length > 2500 ? '…' : ''}</p>
