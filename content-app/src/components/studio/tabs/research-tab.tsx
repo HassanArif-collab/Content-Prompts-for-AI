@@ -1,41 +1,47 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Card } from '@/components/ui/card'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import {
   Plus, Pin, PinOff, Trash2, Search, FileText, Sparkles, Loader2,
-  ExternalLink, Globe, ChevronRight, ChevronDown, Folder, Link2,
+  ExternalLink, ChevronRight, X,
 } from 'lucide-react'
 import { InlineEditor } from '../InlineEditor'
 import type { Project, ResearchNote } from '../project-workspace'
 
 const CATEGORIES = [
-  { value: 'general', label: 'General', color: 'bg-muted text-muted-foreground' },
-  { value: 'interview', label: 'Interview', color: 'bg-muted text-muted-foreground' },
-  { value: 'archival', label: 'Archival', color: 'bg-muted text-muted-foreground' },
-  { value: 'context', label: 'Context', color: 'bg-muted text-muted-foreground' },
-  { value: 'fact-check', label: 'Fact-check', color: 'bg-muted text-muted-foreground' },
+  { value: 'general', label: 'General' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'archival', label: 'Archival' },
+  { value: 'context', label: 'Context' },
+  { value: 'fact-check', label: 'Fact-check' },
 ]
+const categoryLabel = (v: string) => CATEGORIES.find(c => c.value === v)?.label ?? v
+
+type View = 'tree' | 'board' | 'table'
 
 export function ResearchTab({ project, onChange }: {
   project: Project
   onChange: () => void
 }) {
   const [query, setQuery] = useState('')
+  const [view, setView] = useState<View>('tree')
   const [addingParent, setAddingParent] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newCategory, setNewCategory] = useState('general')
   const [researchOpen, setResearchOpen] = useState(false)
+  // Collapsed topic ids (default expanded)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const toggle = (id: string) => setCollapsed(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
 
   const allNotes = project.researchNotes
   const topLevel = allNotes.filter(n => !n.parentId)
@@ -90,6 +96,12 @@ export function ResearchTab({ project, onChange }: {
     onChange()
   }
 
+  const views: { value: View; label: string }[] = [
+    { value: 'tree', label: 'Tree' },
+    { value: 'board', label: 'Board' },
+    { value: 'table', label: 'Table' },
+  ]
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -99,82 +111,109 @@ export function ResearchTab({ project, onChange }: {
           <Input placeholder="Search notes, links, tags..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
         </div>
         <div className="flex items-center gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={() => setResearchOpen(true)}>
-                  <Sparkles className="w-4 h-4 mr-1.5" /> Research a topic
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>AI does web search + synthesizes notes</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Local segmented view switcher */}
+          <div className="inline-flex gap-1 rounded-lg bg-muted/40 p-1">
+            {views.map(v => (
+              <button
+                key={v.value}
+                onClick={() => setView(v.value)}
+                className={view === v.value
+                  ? 'bg-background text-foreground shadow-sm rounded-md px-2.5 py-1 text-xs'
+                  : 'text-muted-foreground px-2.5 py-1 text-xs'}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" onClick={() => setResearchOpen(o => !o)}>
+            <Sparkles className="w-4 h-4 mr-1.5" /> Research a topic
+          </Button>
           <Button onClick={() => setAddingParent(true)}>
             <Plus className="w-4 h-4 mr-1.5" /> New topic
           </Button>
         </div>
       </div>
 
-      {/* Add topic inline */}
-      {addingParent && (
-        <Card className="p-4 border-dashed border-border bg-muted/40">
-          <div className="flex items-center gap-3">
-            <Select value={newCategory} onValueChange={setNewCategory}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addTopic(); if (e.key === 'Escape') setAddingParent(false) }} placeholder="Topic title..." className="flex-1 text-sm px-3 py-2 rounded border border-border bg-background" autoFocus />
-            <Button onClick={addTopic} size="sm">Add</Button>
-            <Button onClick={() => setAddingParent(false)} size="sm" variant="ghost">Cancel</Button>
-          </div>
-        </Card>
+      {/* AI research — inline neutral panel */}
+      {researchOpen && (
+        <AiResearchInline projectId={project.id} onResearched={onChange} onClose={() => setResearchOpen(false)} />
       )}
 
-      {/* Tree view */}
+      {/* Add topic inline */}
+      {addingParent && (
+        <div className="flex items-center gap-3 border border-dashed border-border rounded-md p-3 bg-muted/40">
+          <Select value={newCategory} onValueChange={setNewCategory}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addTopic(); if (e.key === 'Escape') setAddingParent(false) }} placeholder="Topic title..." className="flex-1 text-sm px-3 py-2 rounded border border-border bg-background" autoFocus />
+          <Button onClick={addTopic} size="sm">Add</Button>
+          <Button onClick={() => setAddingParent(false)} size="sm" variant="ghost">Cancel</Button>
+        </div>
+      )}
+
+      {/* Empty state */}
       {filteredTopLevel.length === 0 ? (
-        <Card className="border-dashed p-10 text-center">
+        <div className="border border-dashed border-border rounded-md p-10 text-center">
           <FileText className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
           <h3 className="font-editorial text-lg font-semibold mb-1">{allNotes.length === 0 ? 'No research topics yet' : 'No topics match your search'}</h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">Create a topic, then add links and notes under it. Click any text to edit inline.</p>
           <Button onClick={() => setAddingParent(true)}><Plus className="w-4 h-4 mr-1.5" /> Add your first topic</Button>
-        </Card>
-      ) : (
-        <div className="space-y-0.5">
+        </div>
+      ) : view === 'tree' ? (
+        <div className="divide-y divide-border border-y border-border">
           {filteredTopLevel.map(note => (
-            <TopicNode key={note.id} note={note} childNotes={childrenOf(note.id).filter(matches)} matches={matches} projectId={project.id} onChange={onChange} onAddChild={addChild} onSaveField={saveField} onTogglePin={togglePin} onDelete={deleteNote} />
+            <TopicNode
+              key={note.id}
+              note={note}
+              childNotes={childrenOf(note.id).filter(matches)}
+              collapsed={collapsed.has(note.id)}
+              onToggle={() => toggle(note.id)}
+              onAddChild={addChild}
+              onSaveField={saveField}
+              onTogglePin={togglePin}
+              onDelete={deleteNote}
+            />
           ))}
         </div>
-      )}
-
-      {/* AI Research Dialog kept for now (will be converted to inline later) */}
-      {researchOpen && (
-        <AiResearchInline projectId={project.id} onResearched={onChange} onClose={() => setResearchOpen(false)} />
+      ) : view === 'board' ? (
+        <BoardView
+          topics={filteredTopLevel}
+          childrenOf={childrenOf}
+          onSaveField={saveField}
+          onDelete={deleteNote}
+        />
+      ) : (
+        <TableView
+          notes={filteredTopLevel}
+          onSaveField={saveField}
+          onTogglePin={togglePin}
+          onDelete={deleteNote}
+        />
       )}
     </div>
   )
 }
 
-// ─── Topic Node (parent) ─────────────────────────────────────────
+// ─── Tree: Topic node (parent) ───────────────────────────────────
 
-function TopicNode({ note, childNotes, matches, projectId, onChange, onAddChild, onSaveField, onTogglePin, onDelete }: {
+function TopicNode({ note, childNotes, collapsed, onToggle, onAddChild, onSaveField, onTogglePin, onDelete }: {
   note: ResearchNote
   childNotes: ResearchNote[]
-  matches: (n: ResearchNote) => boolean
-  projectId: string
-  onChange: () => void
+  collapsed: boolean
+  onToggle: () => void
   onAddChild: (parentId: string, title: string, url: string) => void
   onSaveField: (noteId: string, field: string, value: string) => void
   onTogglePin: (note: ResearchNote) => void
   onDelete: (note: ResearchNote) => void
 }) {
-  const [expanded, setExpanded] = useState(true)
   const [addingChild, setAddingChild] = useState(false)
   const [childTitle, setChildTitle] = useState('')
   const [childUrl, setChildUrl] = useState('')
-  const isLink = !!note.url
-  const cat = CATEGORIES.find(c => c.value === note.category) ?? CATEGORIES[0]
+  const hasChildren = childNotes.length > 0
+  const expanded = !collapsed
 
   function submitChild() {
     if (!childTitle.trim()) return
@@ -183,59 +222,54 @@ function TopicNode({ note, childNotes, matches, projectId, onChange, onAddChild,
   }
 
   return (
-    <div className="group">
-      <div className="flex items-center gap-1.5 py-1.5 px-2 rounded-md hover:bg-muted/40">
-        <button onClick={() => setExpanded(!expanded)} className={`p-0.5 text-muted-foreground hover:text-foreground ${childNotes.length === 0 ? 'opacity-30 cursor-default' : ''}`} disabled={childNotes.length === 0}>
-          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+    <div className="group py-1.5">
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={onToggle}
+          className={`p-0.5 text-muted-foreground hover:text-foreground ${hasChildren ? '' : 'opacity-30 cursor-default'}`}
+          disabled={!hasChildren}
+          aria-label={expanded ? 'Collapse' : 'Expand'}
+        >
+          <ChevronRight className={`w-4 h-4 transition-transform ${expanded && hasChildren ? 'rotate-90' : ''}`} />
         </button>
-        {isLink ? (
-          <a href={note.url} target="_blank" rel="noopener noreferrer" className="p-0.5 text-muted-foreground hover:text-foreground" title={note.url}>
-            <Link2 className="w-4 h-4" />
-          </a>
-        ) : (
-          <Folder className="w-4 h-4 text-muted-foreground/80 shrink-0" />
-        )}
         <div className="flex-1 min-w-0">
           <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm font-medium" placeholder="Topic title..." />
         </div>
+        {note.url && <UrlChip url={note.url} />}
         {note.pinned && <Pin className="w-3 h-3 text-muted-foreground shrink-0" />}
-        <Badge variant="outline" className={`text-[10px] uppercase hidden sm:inline-flex ${cat.color}`}>{cat.label}</Badge>
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground hidden sm:inline shrink-0">{categoryLabel(note.category)}</span>
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <button onClick={() => setAddingChild(true)} className="p-1 rounded hover:bg-muted text-muted-foreground" title="Add sub-item">
+          <button onClick={() => setAddingChild(true)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground" title="Add sub-item">
             <Plus className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => onTogglePin(note)} className="p-1 rounded hover:bg-muted text-muted-foreground" title="Pin">
+          <button onClick={() => onTogglePin(note)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground" title="Pin">
             {note.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
           </button>
-          <button onClick={() => onDelete(note)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" title="Delete">
+          <button onClick={() => onDelete(note)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-destructive" title="Delete">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Expanded content + children */}
       {expanded && (
-        <div className="ml-5 border-l border-border/40 pl-2">
-          {/* Inline content editor for parent topics */}
-          {!isLink && note.content && (
-            <div className="py-1 px-2">
+        <div className="ml-5 border-l border-border pl-3 mt-1">
+          {note.content && (
+            <div className="py-1">
               <InlineEditor value={note.content} onSave={(v) => onSaveField(note.id, 'content', v)} multiline className="text-xs text-muted-foreground" placeholder="Add notes..." />
             </div>
           )}
-          {/* Children */}
           {childNotes.map(child => (
             <ChildRow key={child.id} note={child} onSaveField={onSaveField} onDelete={onDelete} />
           ))}
-          {/* Add child inline */}
           {addingChild ? (
-            <div className="py-1.5 px-2 flex items-center gap-2">
+            <div className="py-1.5 flex items-center gap-2">
               <input type="text" value={childTitle} onChange={(e) => setChildTitle(e.target.value)} placeholder="Title..." className="flex-1 text-xs px-2 py-1 rounded border border-border bg-background" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') submitChild(); if (e.key === 'Escape') setAddingChild(false) }} />
               <input type="text" value={childUrl} onChange={(e) => setChildUrl(e.target.value)} placeholder="URL (optional)..." className="flex-1 text-xs px-2 py-1 rounded border border-border bg-background" onKeyDown={(e) => { if (e.key === 'Enter') submitChild() }} />
               <Button onClick={submitChild} size="sm" className="h-7 text-xs">Add</Button>
               <Button onClick={() => setAddingChild(false)} size="sm" variant="ghost" className="h-7 text-xs">Cancel</Button>
             </div>
           ) : (
-            <button onClick={() => setAddingChild(true)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 py-1.5 px-2 rounded-md hover:bg-muted/40">
+            <button onClick={() => setAddingChild(true)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 py-1.5">
               <Plus className="w-3 h-3" /> New sub-item
             </button>
           )}
@@ -245,29 +279,21 @@ function TopicNode({ note, childNotes, matches, projectId, onChange, onAddChild,
   )
 }
 
-// ─── Child Row ───────────────────────────────────────────────────
-
 function ChildRow({ note, onSaveField, onDelete }: {
   note: ResearchNote
   onSaveField: (noteId: string, field: string, value: string) => void
   onDelete: (note: ResearchNote) => void
 }) {
-  const isLink = !!note.url
   return (
-    <div className="group flex items-center gap-1.5 py-1 px-2 rounded-md hover:bg-muted/40">
-      {isLink ? (
-        <a href={note.url} target="_blank" rel="noopener noreferrer" className="p-0.5 text-muted-foreground hover:text-foreground" title={note.url}>
-          <Link2 className="w-3.5 h-3.5" />
-        </a>
-      ) : (
-        <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
-      )}
+    <div className="group flex items-center gap-1.5 py-1">
+      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0">
-        <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm text-foreground/80" placeholder="Title..." />
+        <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm text-foreground" placeholder="Title..." />
       </div>
+      {note.url && <UrlChip url={note.url} />}
       {note.pinned && <Pin className="w-3 h-3 text-muted-foreground shrink-0" />}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <button onClick={() => onDelete(note)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" title="Delete">
+        <button onClick={() => onDelete(note)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-destructive" title="Delete">
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
@@ -275,7 +301,138 @@ function ChildRow({ note, onSaveField, onDelete }: {
   )
 }
 
-// ─── AI Research Inline Panel ────────────────────────────────────
+// Muted URL chip with external-link icon
+function UrlChip({ url }: { url: string }) {
+  let host = url
+  try { host = new URL(url).hostname.replace(/^www\./, '') } catch { /* keep raw */ }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center gap-1 max-w-[160px] truncate rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground shrink-0"
+      title={url}
+    >
+      <ExternalLink className="w-3 h-3 shrink-0" />
+      <span className="truncate">{host}</span>
+    </a>
+  )
+}
+
+// ─── Board: parent topics grouped into columns by category ───────
+
+function BoardView({ topics, childrenOf, onSaveField, onDelete }: {
+  topics: ResearchNote[]
+  childrenOf: (parentId: string) => ResearchNote[]
+  onSaveField: (noteId: string, field: string, value: string) => void
+  onDelete: (note: ResearchNote) => void
+}) {
+  // Only show columns that have topics
+  const columns = CATEGORIES.filter(c => topics.some(t => t.category === c.value))
+  // Catch any topics with an unknown category
+  const known = new Set(CATEGORIES.map(c => c.value))
+  const otherTopics = topics.filter(t => !known.has(t.category))
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2 studio-scroll">
+      {columns.map(col => {
+        const items = topics.filter(t => t.category === col.value)
+        return <BoardColumn key={col.value} label={col.label} items={items} childrenOf={childrenOf} onSaveField={onSaveField} onDelete={onDelete} />
+      })}
+      {otherTopics.length > 0 && (
+        <BoardColumn label="Uncategorized" items={otherTopics} childrenOf={childrenOf} onSaveField={onSaveField} onDelete={onDelete} />
+      )}
+    </div>
+  )
+}
+
+function BoardColumn({ label, items, childrenOf, onSaveField, onDelete }: {
+  label: string
+  items: ResearchNote[]
+  childrenOf: (parentId: string) => ResearchNote[]
+  onSaveField: (noteId: string, field: string, value: string) => void
+  onDelete: (note: ResearchNote) => void
+}) {
+  return (
+    <div className="w-64 shrink-0">
+      <div className="flex items-center gap-1.5 px-1 pb-2 text-xs text-muted-foreground">
+        <span className="uppercase tracking-wide">{label}</span>
+        <span className="tabular-nums">{items.length}</span>
+      </div>
+      <div className="space-y-2">
+        {items.map(note => {
+          const childCount = childrenOf(note.id).length
+          return (
+            <div key={note.id} className="group rounded-md border border-border bg-card p-2.5">
+              <div className="flex items-start gap-1.5">
+                <div className="flex-1 min-w-0">
+                  <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm font-medium" placeholder="Topic title..." />
+                </div>
+                {note.pinned && <Pin className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />}
+                <button onClick={() => onDelete(note)} className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0" title="Delete">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {note.content && (
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{note.content}</p>
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                {note.url && <UrlChip url={note.url} />}
+                {childCount > 0 && (
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{childCount} {childCount === 1 ? 'link' : 'links'}</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Table: flat rows (title · category · url · pinned) ──────────
+
+function TableView({ notes, onSaveField, onTogglePin, onDelete }: {
+  notes: ResearchNote[]
+  onSaveField: (noteId: string, field: string, value: string) => void
+  onTogglePin: (note: ResearchNote) => void
+  onDelete: (note: ResearchNote) => void
+}) {
+  return (
+    <div className="border border-border rounded-md overflow-hidden">
+      <div className="grid grid-cols-[1fr_120px_160px_auto] items-center gap-3 px-3 py-2 border-b border-border text-[11px] uppercase tracking-wide text-muted-foreground bg-muted/40">
+        <span>Title</span>
+        <span>Category</span>
+        <span>URL</span>
+        <span className="text-right">Pinned</span>
+      </div>
+      <div className="divide-y divide-border">
+        {notes.map(note => (
+          <div key={note.id} className="group grid grid-cols-[1fr_120px_160px_auto] items-center gap-3 px-3 py-2">
+            <div className="min-w-0">
+              <InlineEditor value={note.title} onSave={(v) => onSaveField(note.id, 'title', v)} className="text-sm" placeholder="Title..." />
+            </div>
+            <span className="text-xs text-muted-foreground truncate">{categoryLabel(note.category)}</span>
+            <div className="min-w-0">
+              {note.url ? <UrlChip url={note.url} /> : <span className="text-xs text-muted-foreground/50">—</span>}
+            </div>
+            <div className="flex items-center justify-end gap-0.5">
+              <button onClick={() => onTogglePin(note)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground" title={note.pinned ? 'Unpin' : 'Pin'}>
+                {note.pinned ? <Pin className="w-3.5 h-3.5 text-foreground" /> : <PinOff className="w-3.5 h-3.5" />}
+              </button>
+              <button onClick={() => onDelete(note)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── AI Research — inline neutral panel ──────────────────────────
 
 function AiResearchInline({ projectId, onResearched, onClose }: {
   projectId: string
@@ -316,35 +473,32 @@ function AiResearchInline({ projectId, onResearched, onClose }: {
   }
 
   return (
-    <Card className="p-4 border-border bg-muted/40">
+    <div className="rounded-md border border-border bg-muted/40 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /> AI Research</h4>
-        <button onClick={onClose} className="p-1 rounded hover:bg-muted"><span className="text-xs">Close</span></button>
+        <h4 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-muted-foreground" /> Research a topic</h4>
+        <button onClick={onClose} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground" aria-label="Close"><X className="w-4 h-4" /></button>
       </div>
-      <div className="flex items-center gap-2 mb-2">
+      <p className="text-xs text-muted-foreground mb-2">AI does a web search and synthesizes notes you can import as topics.</p>
+      <div className="flex items-center gap-2">
         <input type="text" value={topic} onChange={(e) => setTopic(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') research() }} placeholder="e.g. Pakistan textile exports decline 2024" className="flex-1 text-sm px-3 py-2 rounded border border-border bg-background" disabled={loading} />
         <Button onClick={research} disabled={loading || !topic.trim()} size="sm">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
         </Button>
       </div>
-      {result && (
-        <div className="space-y-2">
-          {result.notes.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium">Generated notes ({result.notes.length})</span>
-                <Button size="sm" onClick={importAll} className="h-7 text-xs">Import all</Button>
-              </div>
-              {result.notes.map((note, i) => (
-                <div key={i} className="p-2 rounded border border-border bg-muted/40 text-xs">
-                  <span className="font-semibold">{note.title}</span>
-                  <p className="text-muted-foreground mt-1 line-clamp-2">{note.content}</p>
-                </div>
-              ))}
+      {result && result.notes.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Generated notes ({result.notes.length})</span>
+            <Button size="sm" onClick={importAll} className="h-7 text-xs">Import all</Button>
+          </div>
+          {result.notes.map((note, i) => (
+            <div key={i} className="rounded border border-border bg-background p-2 text-xs">
+              <span className="font-medium">{note.title}</span>
+              <p className="text-muted-foreground mt-1 line-clamp-2">{note.content}</p>
             </div>
-          )}
+          ))}
         </div>
       )}
-    </Card>
+    </div>
   )
 }

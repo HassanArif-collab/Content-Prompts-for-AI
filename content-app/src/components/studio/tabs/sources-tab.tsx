@@ -4,17 +4,13 @@ import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import {
   Plus, Trash2, Search, Quote, ExternalLink, Copy, Star,
-  Sparkles, Loader2, Link as LinkIcon,
+  Sparkles, Link as LinkIcon,
 } from 'lucide-react'
 import { InlineEditor } from '../InlineEditor'
 import type { Project, Source } from '../project-workspace'
@@ -29,10 +25,13 @@ const SOURCE_TYPES = [
   { value: 'archival', label: 'Archival' },
 ]
 
+type View = 'list' | 'table'
+
 export function SourcesTab({ project, onChange }: {
   project: Project
   onChange: () => void
 }) {
+  const [view, setView] = useState<View>('list')
   const [query, setQuery] = useState('')
   const [urlImportOpen, setUrlImportOpen] = useState(false)
   const [importUrl, setImportUrl] = useState('')
@@ -93,6 +92,30 @@ export function SourcesTab({ project, onChange }: {
     } catch { toast.error('Import failed') }
   }
 
+  function Stars({ source }: { source: Source }) {
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} onClick={() => saveField(source.id, 'credibility', n)} className="p-0.5">
+            <Star className={`w-3 h-3 ${n <= source.credibility ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  function TypeSelect({ source }: { source: Source }) {
+    return (
+      <select
+        value={source.type}
+        onChange={(e) => saveField(source.id, 'type', e.target.value)}
+        className="h-7 text-xs bg-transparent text-foreground border border-border rounded-md px-1.5"
+      >
+        {SOURCE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+      </select>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -100,6 +123,19 @@ export function SourcesTab({ project, onChange }: {
         <div className="flex-1 relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search sources..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
+        </div>
+        <div className="inline-flex gap-1 rounded-lg bg-muted/40 p-1">
+          {(['list', 'table'] as View[]).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={view === v
+                ? 'bg-background text-foreground shadow-sm rounded-md px-2.5 py-1 text-xs capitalize'
+                : 'text-muted-foreground px-2.5 py-1 text-xs capitalize'}
+            >
+              {v}
+            </button>
+          ))}
         </div>
         <TooltipProvider>
           <Tooltip>
@@ -125,7 +161,6 @@ export function SourcesTab({ project, onChange }: {
         </Card>
       )}
 
-      {/* Sources list — inline editing, no popups */}
       {filtered.length === 0 ? (
         <Card className="border-dashed p-10 text-center">
           <Quote className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
@@ -133,17 +168,16 @@ export function SourcesTab({ project, onChange }: {
           <p className="text-sm text-muted-foreground mb-4">Build a citation library. Click any text to edit inline.</p>
           <Button onClick={addSource}><Plus className="w-4 h-4 mr-1.5" /> Add first source</Button>
         </Card>
-      ) : (
+      ) : view === 'list' ? (
+        /* List view — rich inline rows */
         <div className="rounded-lg border border-border overflow-hidden">
-          {/* Header */}
           <div className="flex items-center border-b border-border bg-muted/30 px-3 py-2">
             <div className="w-8 text-xs text-muted-foreground">#</div>
-            <div className="flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Title / Author</div>
+            <div className="flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Title / author</div>
             <div className="w-32 text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</div>
             <div className="w-24 text-xs font-medium text-muted-foreground uppercase tracking-wider">Credibility</div>
             <div className="w-8" />
           </div>
-          {/* Rows */}
           {filtered.map((s, i) => (
             <div key={s.id} className="group flex items-start border-b border-border/40 hover:bg-accent/20 px-3 py-2.5">
               <div className="w-8 text-xs text-muted-foreground tabular-nums pt-1">{i + 1}</div>
@@ -171,24 +205,47 @@ export function SourcesTab({ project, onChange }: {
                 )}
                 {s.notes && <p className="text-xs text-muted-foreground italic">{s.notes}</p>}
               </div>
-              <div className="w-32 pt-1">
-                <Select value={s.type} onValueChange={(v) => saveField(s.id, 'type', v)}>
-                  <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SOURCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-24 pt-1">
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <button key={n} onClick={() => saveField(s.id, 'credibility', n)} className="p-0.5">
-                      <Star className={`w-3 h-3 ${n <= s.credibility ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <div className="w-32 pt-1"><TypeSelect source={s} /></div>
+              <div className="w-24 pt-1"><Stars source={s} /></div>
               <div className="w-8 pt-1">
+                <button onClick={() => deleteSource(s.id)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Table view — citation · author · credibility · url */
+        <div className="rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center border-b border-border bg-muted/30 px-3 py-2">
+            <div className="w-8 text-xs text-muted-foreground">#</div>
+            <div className="flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Citation</div>
+            <div className="w-40 text-xs font-medium text-muted-foreground uppercase tracking-wider">Author</div>
+            <div className="w-24 text-xs font-medium text-muted-foreground uppercase tracking-wider">Credibility</div>
+            <div className="w-40 text-xs font-medium text-muted-foreground uppercase tracking-wider">URL</div>
+            <div className="w-8" />
+          </div>
+          {filtered.map((s, i) => (
+            <div key={s.id} className="group flex items-center border-b border-border/40 hover:bg-accent/20 px-3 py-2">
+              <div className="w-8 text-xs text-muted-foreground tabular-nums">{i + 1}</div>
+              <div className="flex-1 min-w-0 pr-3">
+                <InlineEditor value={s.citation} onSave={(v) => saveField(s.id, 'citation', v)} className="text-sm" placeholder="Citation..." />
+              </div>
+              <div className="w-40 pr-3">
+                <InlineEditor value={s.author} onSave={(v) => saveField(s.id, 'author', v)} className="text-xs text-muted-foreground" placeholder="Author..." />
+              </div>
+              <div className="w-24"><Stars source={s} /></div>
+              <div className="w-40 min-w-0 pr-3">
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-foreground hover:underline truncate">
+                    <ExternalLink className="w-3 h-3 shrink-0" /> <span className="truncate">{s.url}</span>
+                  </a>
+                ) : (
+                  <InlineEditor value={s.url} onSave={(v) => saveField(s.id, 'url', v)} className="text-xs text-muted-foreground" placeholder="URL..." />
+                )}
+              </div>
+              <div className="w-8">
                 <button onClick={() => deleteSource(s.id)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

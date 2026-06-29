@@ -19,9 +19,7 @@ import {
   Plus, Film, Clock, FileText, Quote, Clapperboard, ListTodo,
   Search, Sparkles, Trash2, ArrowRight,
 } from 'lucide-react'
-import {
-  statusBadgeClass, statusLabel, coverGradientClass, coverDotClass,
-} from '@/lib/studio-utils'
+import { statusLabel } from '@/lib/studio-utils'
 import { formatDistanceToNow } from 'date-fns'
 
 interface ProjectWithCounts {
@@ -46,6 +44,8 @@ interface ProjectWithCounts {
 
 const COLOR_OPTIONS = ['amber', 'emerald', 'rose', 'violet', 'sky', 'orange']
 
+type View = 'gallery' | 'list'
+
 export function Dashboard() {
   const openProject = useStudio((s) => s.openProject)
   const [projects, setProjects] = useState<ProjectWithCounts[]>([])
@@ -53,6 +53,7 @@ export function Dashboard() {
   const [query, setQuery] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [seedLoading, setSeedLoading] = useState(false)
+  const [view, setView] = useState<View>('gallery')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -152,7 +153,32 @@ export function Dashboard() {
           </div>
         </section>
 
-        {/* Project grid */}
+        {/* View switcher */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {filtered.length} {filtered.length === 1 ? 'project' : 'projects'}
+          </h3>
+          <div className="inline-flex gap-1 rounded-lg bg-muted/40 p-1">
+            <button
+              onClick={() => setView('gallery')}
+              className={view === 'gallery'
+                ? 'bg-background text-foreground shadow-sm rounded-md px-2.5 py-1 text-xs'
+                : 'text-muted-foreground px-2.5 py-1 text-xs'}
+            >
+              Gallery
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={view === 'list'
+                ? 'bg-background text-foreground shadow-sm rounded-md px-2.5 py-1 text-xs'
+                : 'text-muted-foreground px-2.5 py-1 text-xs'}
+            >
+              List
+            </button>
+          </div>
+        </div>
+
+        {/* Projects */}
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -161,10 +187,16 @@ export function Dashboard() {
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState onSeed={handleSeed} seedLoading={seedLoading} />
-        ) : (
+        ) : view === 'gallery' ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((p) => (
               <ProjectCard key={p.id} project={p} onOpen={() => openProject(p.id)} onDelete={() => load()} />
+            ))}
+          </div>
+        ) : (
+          <div className="border border-border rounded-lg overflow-hidden divide-y divide-border">
+            {filtered.map((p) => (
+              <ProjectRow key={p.id} project={p} onOpen={() => openProject(p.id)} />
             ))}
           </div>
         )}
@@ -207,19 +239,20 @@ function ProjectCard({ project, onOpen, onDelete }: {
   }
 
   return (
-    <Card className="group relative overflow-hidden border-border/60 hover:border-border transition-colors">
-      {/* Color gradient header */}
-      <div className={`absolute inset-x-0 top-0 h-32 bg-gradient-to-br ${coverGradientClass(project.coverColor)} pointer-events-none`} />
+    <Card className="group relative overflow-hidden border-border hover:bg-accent/40 transition-colors">
       <div className="absolute top-4 right-4 flex items-center gap-1.5 z-10">
-        <span className={`w-2 h-2 rounded-full ${coverDotClass(project.coverColor)}`} />
-        <Badge variant="outline" className={`text-[10px] uppercase tracking-wider font-medium ${statusBadgeClass(project.status)}`}>
+        <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-medium bg-muted text-muted-foreground border-border">
           {statusLabel(project.status)}
         </Badge>
       </div>
 
-      <button onClick={onOpen} className="relative z-0 w-full text-left p-5 pt-6 h-full flex flex-col">
-        <div className="mt-20 flex-1 flex flex-col">
-          <h3 className="font-editorial text-xl font-semibold leading-tight mb-2 line-clamp-2 group-hover:text-foreground">
+      <button onClick={onOpen} className="relative z-0 w-full text-left p-5 h-full flex flex-col">
+        <div className="flex-1 flex flex-col">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Documentary</span>
+          </div>
+          <h3 className="font-editorial text-xl font-semibold leading-tight mb-2 line-clamp-2">
             {project.title}
           </h3>
           {project.logline && (
@@ -235,10 +268,10 @@ function ProjectCard({ project, onOpen, onDelete }: {
             <CountPill icon={<ListTodo className="w-3 h-3" />} value={project._count.tasks} label="tasks" />
           </div>
 
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
             <span className="text-xs text-muted-foreground">Updated {updated}</span>
-            <span className="text-xs font-medium text-foreground/70 group-hover:text-foreground flex items-center gap-1">
-              Open <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground flex items-center gap-1">
+              Open <ArrowRight className="w-3 h-3" />
             </span>
           </div>
         </div>
@@ -276,6 +309,24 @@ function CountPill({ icon, value, label }: { icon: React.ReactNode; value: numbe
       <div className="flex items-center gap-1 text-foreground/80">{icon}<span className="font-medium">{value}</span></div>
       <span className="text-[10px] text-muted-foreground">{label}</span>
     </div>
+  )
+}
+
+function ProjectRow({ project, onOpen }: { project: ProjectWithCounts; onOpen: () => void }) {
+  const updated = formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full text-left flex items-center gap-4 px-4 py-2.5 hover:bg-accent/40 transition-colors"
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+      <span className="font-medium text-sm truncate flex-1 min-w-0">{project.title}</span>
+      <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-medium bg-muted text-muted-foreground border-border shrink-0">
+        {statusLabel(project.status)}
+      </Badge>
+      <span className="text-xs text-muted-foreground tabular-nums w-16 text-right shrink-0">{project.targetRuntime}m</span>
+      <span className="text-xs text-muted-foreground w-32 text-right shrink-0 hidden sm:inline">{updated}</span>
+    </button>
   )
 }
 
@@ -366,18 +417,17 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: {
               <Input id="runtime" type="number" value={targetRuntime} onChange={(e) => setTargetRuntime(parseInt(e.target.value) || 0)} min={1} />
             </div>
             <div className="space-y-1.5">
-              <Label>Cover color</Label>
-              <div className="flex items-center gap-1.5 pt-2">
-                {COLOR_OPTIONS.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCoverColor(c)}
-                    className={`w-6 h-6 rounded-full ${coverDotClass(c)} ${coverColor === c ? 'ring-2 ring-offset-2 ring-offset-background ring-foreground' : 'opacity-60 hover:opacity-100'}`}
-                    aria-label={c}
-                  />
-                ))}
-              </div>
+              <Label htmlFor="label">Label</Label>
+              <Select value={coverColor} onValueChange={setCoverColor}>
+                <SelectTrigger id="label">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOR_OPTIONS.map(c => (
+                    <SelectItem key={c} value={c}>{statusLabel(c)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

@@ -16,33 +16,42 @@ import {
 import { toast } from 'sonner'
 import {
   Plus, Pencil, Trash2, ListTodo, Circle, AlertCircle,
-  CheckCircle2, Clock, ArrowRight, Calendar,
+  CheckCircle2, ArrowRight, Calendar,
 } from 'lucide-react'
+import { InlineEditor } from '../InlineEditor'
 import type { Project, Task } from '../project-workspace'
 
 const CATEGORIES = [
-  { value: 'research', label: 'Research', color: 'bg-muted text-muted-foreground' },
-  { value: 'filming', label: 'Filming', color: 'bg-muted text-muted-foreground' },
-  { value: 'editing', label: 'Editing', color: 'bg-muted text-muted-foreground' },
-  { value: 'graphics', label: 'Graphics', color: 'bg-muted text-muted-foreground' },
-  { value: 'sound', label: 'Sound', color: 'bg-muted text-muted-foreground' },
-  { value: 'licensing', label: 'Licensing', color: 'bg-muted text-muted-foreground' },
-  { value: 'publish', label: 'Publish', color: 'bg-muted text-muted-foreground' },
-  { value: 'general', label: 'General', color: 'bg-muted text-muted-foreground' },
+  { value: 'research', label: 'Research' },
+  { value: 'filming', label: 'Filming' },
+  { value: 'editing', label: 'Editing' },
+  { value: 'graphics', label: 'Graphics' },
+  { value: 'sound', label: 'Sound' },
+  { value: 'licensing', label: 'Licensing' },
+  { value: 'publish', label: 'Publish' },
+  { value: 'general', label: 'General' },
 ]
 
 const STATUSES = [
-  { value: 'todo', label: 'To do', icon: Circle, color: 'text-muted-foreground', colColor: 'border-t-muted-foreground/40' },
-  { value: 'in-progress', label: 'In progress', icon: AlertCircle, color: 'text-muted-foreground', colColor: 'border-t-amber-500/60' },
-  { value: 'blocked', label: 'Blocked', icon: AlertCircle, color: 'text-destructive', colColor: 'border-t-destructive/60' },
-  { value: 'done', label: 'Done', icon: CheckCircle2, color: 'text-emerald-500', colColor: 'border-t-emerald-500/60' },
+  { value: 'todo', label: 'To do', icon: Circle },
+  { value: 'in-progress', label: 'In progress', icon: AlertCircle },
+  { value: 'blocked', label: 'Blocked', icon: AlertCircle },
+  { value: 'done', label: 'Done', icon: CheckCircle2 },
 ]
 
 const PRIORITIES = [
-  { value: 'low', label: 'Low', color: 'bg-muted text-muted-foreground' },
-  { value: 'medium', label: 'Medium', color: 'bg-muted text-muted-foreground' },
-  { value: 'high', label: 'High', color: 'bg-muted text-muted-foreground' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
 ]
+
+type View = 'board' | 'list' | 'table'
+
+// ponytail: local helper, no need to import date libs for a YYYY-MM-DD string compare.
+function isOverdue(task: Task): boolean {
+  if (!task.dueDate || task.status === 'done') return false
+  return task.dueDate < new Date().toISOString().slice(0, 10)
+}
 
 export function ProductionTab({ project, onChange }: {
   project: Project
@@ -51,6 +60,7 @@ export function ProductionTab({ project, onChange }: {
   const [editing, setEditing] = useState<Task | null>(null)
   const [creating, setCreating] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
+  const [view, setView] = useState<View>('board')
 
   const byStatus = useMemo(() => {
     const groups: Record<string, Task[]> = { todo: [], 'in-progress': [], blocked: [], done: [] }
@@ -79,15 +89,31 @@ export function ProductionTab({ project, onChange }: {
     onChange()
   }
 
+  async function renameTask(task: Task, title: string) {
+    if (!title.trim()) return
+    await fetch(`/api/projects/${project.id}/tasks/${task.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    })
+    onChange()
+  }
+
+  async function deleteTask(task: Task) {
+    await fetch(`/api/projects/${project.id}/tasks/${task.id}`, { method: 'DELETE' })
+    toast.success('Task deleted')
+    onChange()
+  }
+
   return (
     <div className="space-y-5">
       <Card className="p-5 border-border/60">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-4">
-            <StatPill label="To do" count={byStatus.todo.length} color="text-muted-foreground" />
-            <StatPill label="In progress" count={byStatus['in-progress'].length} color="text-muted-foreground" />
-            <StatPill label="Blocked" count={byStatus.blocked.length} color="text-destructive" />
-            <StatPill label="Done" count={byStatus.done.length} color="text-emerald-500" />
+            <StatPill label="To do" count={byStatus.todo.length} />
+            <StatPill label="In progress" count={byStatus['in-progress'].length} />
+            <StatPill label="Blocked" count={byStatus.blocked.length} />
+            <StatPill label="Done" count={byStatus.done.length} />
           </div>
           <div className="flex items-center gap-2 flex-1 max-w-md">
             <Input
@@ -103,6 +129,25 @@ export function ProductionTab({ project, onChange }: {
         </div>
       </Card>
 
+      <div className="flex items-center justify-between">
+        <div className="inline-flex gap-1 rounded-lg bg-muted/40 p-1">
+          {(['board', 'list', 'table'] as View[]).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={view === v
+                ? 'bg-background text-foreground shadow-sm rounded-md px-2.5 py-1 text-xs'
+                : 'text-muted-foreground px-2.5 py-1 text-xs'}
+            >
+              {v === 'board' ? 'Board' : v === 'list' ? 'List' : 'Table'}
+            </button>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
+          <Plus className="w-4 h-4 mr-1.5" /> Add detailed task
+        </Button>
+      </div>
+
       {project.tasks.length === 0 ? (
         <Card className="border-dashed p-10 text-center">
           <ListTodo className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
@@ -111,48 +156,29 @@ export function ProductionTab({ project, onChange }: {
             Track everything that needs to happen — research follow-ups, filming days, edit milestones, licensing, sound, color, thumbnails, publish.
           </p>
         </Card>
+      ) : view === 'board' ? (
+        <BoardView
+          byStatus={byStatus}
+          onEdit={setEditing}
+          onRename={renameTask}
+          onDelete={deleteTask}
+          onMove={moveTask}
+        />
+      ) : view === 'list' ? (
+        <ListView
+          byStatus={byStatus}
+          onEdit={setEditing}
+          onRename={renameTask}
+          onDelete={deleteTask}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {STATUSES.map(col => (
-            <div key={col.value} className={`rounded-lg border border-border/60 border-t-4 ${col.colColor} bg-card/50 overflow-hidden flex flex-col`}>
-              <div className="p-3 border-b border-border/60 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <col.icon className={`w-3.5 h-3.5 ${col.color}`} />
-                  <h3 className="text-sm font-semibold">{col.label}</h3>
-                </div>
-                <span className="text-xs text-muted-foreground tabular-nums">{byStatus[col.value].length}</span>
-              </div>
-              <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto studio-scroll flex-1">
-                {byStatus[col.value].length === 0 ? (
-                  <div className="text-xs text-muted-foreground/50 text-center py-6">Drop tasks here</div>
-                ) : (
-                  byStatus[col.value].map(t => (
-                    <TaskCard
-                      key={t.id}
-                      task={t}
-                      onEdit={() => setEditing(t)}
-                      onChange={onChange}
-                      onMove={(dir) => {
-                        const idx = STATUSES.findIndex(s => s.value === t.status)
-                        const next = dir === 'left' ? STATUSES[idx - 1] : STATUSES[idx + 1]
-                        if (next) moveTask(t, next.value)
-                      }}
-                      canMoveLeft={STATUSES.findIndex(s => s.value === t.status) > 0}
-                      canMoveRight={STATUSES.findIndex(s => s.value === t.status) < STATUSES.length - 1}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <TableView
+          tasks={project.tasks}
+          onEdit={setEditing}
+          onRename={renameTask}
+          onDelete={deleteTask}
+        />
       )}
-
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={() => setCreating(true)}>
-          <Plus className="w-4 h-4 mr-1.5" /> Add detailed task
-        </Button>
-      </div>
 
       <TaskDialog
         open={creating || !!editing}
@@ -165,34 +191,85 @@ export function ProductionTab({ project, onChange }: {
   )
 }
 
-function TaskCard({ task, onEdit, onChange, onMove, canMoveLeft, canMoveRight }: {
+// ──────────────────────────────────────────────────────────── Board
+
+function BoardView({ byStatus, onEdit, onRename, onDelete, onMove }: {
+  byStatus: Record<string, Task[]>
+  onEdit: (t: Task) => void
+  onRename: (t: Task, title: string) => void
+  onDelete: (t: Task) => void
+  onMove: (t: Task, status: string) => void
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {STATUSES.map(col => (
+        <div key={col.value} className="rounded-lg border border-border/60 bg-card/50 overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-border/60 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <col.icon className="w-3.5 h-3.5 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">{col.label}</h3>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">{byStatus[col.value].length}</span>
+          </div>
+          <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto studio-scroll flex-1">
+            {byStatus[col.value].length === 0 ? (
+              <div className="text-xs text-muted-foreground/50 text-center py-6">No tasks</div>
+            ) : (
+              byStatus[col.value].map(t => {
+                const idx = STATUSES.findIndex(s => s.value === t.status)
+                return (
+                  <TaskCard
+                    key={t.id}
+                    task={t}
+                    onEdit={() => onEdit(t)}
+                    onRename={(title) => onRename(t, title)}
+                    onDelete={() => onDelete(t)}
+                    onMove={(dir) => {
+                      const next = dir === 'left' ? STATUSES[idx - 1] : STATUSES[idx + 1]
+                      if (next) onMove(t, next.value)
+                    }}
+                    canMoveLeft={idx > 0}
+                    canMoveRight={idx < STATUSES.length - 1}
+                  />
+                )
+              })
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TaskCard({ task, onEdit, onRename, onDelete, onMove, canMoveLeft, canMoveRight }: {
   task: Task
   onEdit: () => void
-  onChange: () => void
+  onRename: (title: string) => void
+  onDelete: () => void
   onMove: (dir: 'left' | 'right') => void
   canMoveLeft: boolean
   canMoveRight: boolean
 }) {
   const cat = CATEGORIES.find(c => c.value === task.category) ?? CATEGORIES[7]
   const pri = PRIORITIES.find(p => p.value === task.priority) ?? PRIORITIES[1]
-
-  async function handleDelete() {
-    await fetch(`/api/projects/${task.projectId}/tasks/${task.id}`, { method: 'DELETE' })
-    toast.success('Task deleted')
-    onChange()
-  }
+  const overdue = isOverdue(task)
 
   return (
-    <Card className="p-3 border-border/60 hover:border-border/100 transition-colors group">
+    <Card className="p-3 border-border/60 hover:border-border transition-colors group">
       <div className="flex items-start gap-1.5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-            <Badge variant="outline" className={`text-[10px] uppercase ${cat.color}`}>{cat.label}</Badge>
-            <Badge variant="outline" className={`text-[10px] uppercase ${pri.color}`}>{pri.label}</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase bg-muted text-muted-foreground">{cat.label}</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase bg-muted text-muted-foreground">{pri.label}</Badge>
           </div>
-          <p className="text-sm font-medium leading-snug">{task.title}</p>
+          <InlineEditor
+            value={task.title}
+            onSave={onRename}
+            placeholder="Task title…"
+            className="text-sm font-medium leading-snug"
+          />
           {task.dueDate && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
+            <div className={`flex items-center gap-1 text-xs mt-1.5 ${overdue ? 'text-destructive' : 'text-muted-foreground'}`}>
               <Calendar className="w-3 h-3" />
               {task.dueDate}
             </div>
@@ -202,7 +279,7 @@ function TaskCard({ task, onEdit, onChange, onMove, canMoveLeft, canMoveRight }:
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/60 opacity-60 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/60 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={() => onMove('left')} disabled={!canMoveLeft} className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20" aria-label="Move left">
           <ArrowRight className="w-3 h-3 rotate-180" />
         </button>
@@ -210,7 +287,7 @@ function TaskCard({ task, onEdit, onChange, onMove, canMoveLeft, canMoveRight }:
           <button onClick={onEdit} className="p-1 rounded hover:bg-muted text-muted-foreground" aria-label="Edit">
             <Pencil className="w-3 h-3" />
           </button>
-          <button onClick={handleDelete} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" aria-label="Delete">
+          <button onClick={onDelete} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" aria-label="Delete">
             <Trash2 className="w-3 h-3" />
           </button>
         </div>
@@ -222,10 +299,127 @@ function TaskCard({ task, onEdit, onChange, onMove, canMoveLeft, canMoveRight }:
   )
 }
 
-function StatPill({ label, count, color }: { label: string; count: number; color: string }) {
+// ──────────────────────────────────────────────────────────── List
+
+function ListView({ byStatus, onEdit, onRename, onDelete }: {
+  byStatus: Record<string, Task[]>
+  onEdit: (t: Task) => void
+  onRename: (t: Task, title: string) => void
+  onDelete: (t: Task) => void
+}) {
+  return (
+    <div className="space-y-6">
+      {STATUSES.map(col => (
+        <div key={col.value}>
+          <div className="flex items-center gap-1.5 mb-2 px-1">
+            <col.icon className="w-3.5 h-3.5 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">{col.label}</h3>
+            <span className="text-xs text-muted-foreground tabular-nums">{byStatus[col.value].length}</span>
+          </div>
+          <div className="rounded-lg border border-border/60 divide-y divide-border/60 overflow-hidden">
+            {byStatus[col.value].length === 0 ? (
+              <div className="text-xs text-muted-foreground/50 px-3 py-3">No tasks</div>
+            ) : (
+              byStatus[col.value].map(t => (
+                <TaskRow key={t.id} task={t} onEdit={() => onEdit(t)} onRename={(title) => onRename(t, title)} onDelete={() => onDelete(t)} />
+              ))
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TaskRow({ task, onEdit, onRename, onDelete }: {
+  task: Task
+  onEdit: () => void
+  onRename: (title: string) => void
+  onDelete: () => void
+}) {
+  const pri = PRIORITIES.find(p => p.value === task.priority) ?? PRIORITIES[1]
+  const overdue = isOverdue(task)
+  return (
+    <div className="group flex items-center gap-3 px-3 py-2 hover:bg-accent/50 transition-colors">
+      <div className="flex-1 min-w-0">
+        <InlineEditor value={task.title} onSave={onRename} placeholder="Task title…" className="text-sm font-medium" />
+      </div>
+      <Badge variant="outline" className="text-[10px] uppercase bg-muted text-muted-foreground shrink-0">{pri.label}</Badge>
+      {task.dueDate && (
+        <span className={`text-xs shrink-0 tabular-nums ${overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{task.dueDate}</span>
+      )}
+      <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={onEdit} className="p-1 rounded hover:bg-muted text-muted-foreground" aria-label="Edit">
+          <Pencil className="w-3 h-3" />
+        </button>
+        <button onClick={onDelete} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" aria-label="Delete">
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────── Table
+
+function TableView({ tasks, onEdit, onRename, onDelete }: {
+  tasks: Task[]
+  onEdit: (t: Task) => void
+  onRename: (t: Task, title: string) => void
+  onDelete: (t: Task) => void
+}) {
+  return (
+    <div className="rounded-lg border border-border/60 overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
+            <th className="font-medium px-3 py-2">Task</th>
+            <th className="font-medium px-3 py-2 w-28">Status</th>
+            <th className="font-medium px-3 py-2 w-24">Priority</th>
+            <th className="font-medium px-3 py-2 w-32">Due</th>
+            <th className="px-3 py-2 w-16" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/60">
+          {tasks.map(t => {
+            const status = STATUSES.find(s => s.value === t.status)
+            const pri = PRIORITIES.find(p => p.value === t.priority) ?? PRIORITIES[1]
+            const overdue = isOverdue(t)
+            return (
+              <tr key={t.id} className="group hover:bg-accent/50 transition-colors">
+                <td className="px-3 py-2">
+                  <InlineEditor value={t.title} onSave={(title) => onRename(t, title)} placeholder="Task title…" className="font-medium" />
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">{status?.label ?? t.status}</td>
+                <td className="px-3 py-2">
+                  <Badge variant="outline" className="text-[10px] uppercase bg-muted text-muted-foreground">{pri.label}</Badge>
+                </td>
+                <td className={`px-3 py-2 tabular-nums ${overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{t.dueDate || '—'}</td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => onEdit(t)} className="p-1 rounded hover:bg-muted text-muted-foreground" aria-label="Edit">
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => onDelete(t)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive" aria-label="Delete">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────── Shared
+
+function StatPill({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className={`text-2xl font-editorial font-bold tabular-nums ${color}`}>{count}</span>
+      <span className="text-2xl font-editorial font-bold tabular-nums text-foreground">{count}</span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   )
