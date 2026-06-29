@@ -69,10 +69,11 @@ The Documentary Studio app is running on the user's PC. You connect to it via a 
 - **Tasks** → pushed to the Production tab (kanban board)
 - **Visual plans** → pushed to the Visual Plans tab (after script is approved)
 
-The app renders [1] footnotes as clickable links that open in a sidebar with:
-- The source URL
-- An AI summarize button (summarizes the web page)
-- A chat-about-this-source button
+The app renders [1] footnotes as clickable inline chips. Clicking one opens a right-hand
+Sources panel that lists **every** source (the clicked one expanded). For each source the
+user can: read the citation + credibility stars, preview the page inline (extracted
+readable text), open it in a browser, and AI-summarize it. So place inline [N] markers
+generously and in citation order — they are the user's way into the sources.
 
 **Every [N] in the script MUST map to a source pushed to /sources.** No orphan references.
 

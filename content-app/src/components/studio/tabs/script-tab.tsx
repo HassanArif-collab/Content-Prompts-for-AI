@@ -200,7 +200,7 @@ export function ScriptTab({ project, onChange }: {
         </div>
       )}
 
-      <SourceSidebar source={activeSource} onClose={() => setActiveSource(null)} />
+      <SourceSidebar sources={sources} activeSource={activeSource} onClose={() => setActiveSource(null)} />
     </div>
   )
 }
