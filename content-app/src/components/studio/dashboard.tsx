@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { statusLabel } from '@/lib/studio-utils'
 import { formatDistanceToNow } from 'date-fns'
+import { SidePanel } from './side-panel'
 
 interface ProjectWithCounts {
   id: string
@@ -387,18 +388,23 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="w-4 h-4 mr-1.5" />
-          New documentary
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="font-editorial">Start a new documentary</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
+    <>
+      <Button size="sm" onClick={() => onOpenChange(true)}>
+        <Plus className="w-4 h-4 mr-1.5" />
+        New documentary
+      </Button>
+      <SidePanel
+        open={open}
+        onClose={() => onOpenChange(false)}
+        title="Start a new documentary"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={submit} disabled={saving}>{saving ? 'Creating…' : 'Create project'}</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. The Silent Engineers of Apollo" />
@@ -431,13 +437,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: {
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving ? 'Creating…' : 'Create project'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </SidePanel>
+    </>
   )
 }
