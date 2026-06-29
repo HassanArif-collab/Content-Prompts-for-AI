@@ -307,7 +307,7 @@ function ProjectCard({ project, onOpen, onDelete }: {
 function CountPill({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5 py-1.5 rounded-md bg-muted/40">
-      <div className="flex items-center gap-1 text-foreground/80">{icon}<span className="font-medium">{value}</span></div>
+      <div className="flex items-center gap-1 text-foreground">{icon}<span className="font-medium">{value}</span></div>
       <span className="text-[10px] text-muted-foreground">{label}</span>
     </div>
   )

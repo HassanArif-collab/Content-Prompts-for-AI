@@ -269,7 +269,7 @@ export function RichBlockEditor({
                 key={it.id}
                 onMouseDown={(e) => { e.preventDefault(); runItem(it) }}
                 onMouseEnter={() => { selectedRef.current = i; setSelected(i) }}
-                className={`flex w-full items-center gap-2.5 px-2.5 py-1.5 text-left text-sm ${i === selected ? 'bg-accent text-foreground' : 'text-foreground/80'}`}
+                className={`flex w-full items-center gap-2.5 px-2.5 py-1.5 text-left text-sm ${i === selected ? 'bg-accent text-foreground' : 'text-foreground'}`}
               >
                 <Icon className="h-4 w-4 text-muted-foreground" />
                 <span>{it.label}</span>

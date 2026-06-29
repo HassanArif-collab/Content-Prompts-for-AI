@@ -72,7 +72,7 @@ export function ProjectWorkspace() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
-  const [aiOpen, setAiOpen] = useState(true)
+  const [aiOpen, setAiOpen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
   const triggerReload = () => setReloadKey(k => k + 1)
@@ -153,7 +153,7 @@ export function ProjectWorkspace() {
       <div className="flex-1 flex min-h-0">
         {/* Left: project content (scrollable) */}
         <main className="flex-1 min-w-0 overflow-y-auto studio-scroll">
-          <div className="px-6 py-6 max-w-[1400px]">
+          <div className={`px-6 py-6 transition-all duration-200 ${aiOpen ? 'max-w-full' : 'max-w-[1200px] mx-auto'}`}>
             <Tabs value={tab} onValueChange={setTab}>
               <TabsList className="bg-transparent h-auto w-full justify-start gap-5 rounded-none border-b border-border p-0">
                 <TabsTrigger value="overview" className={TAB_TRIGGER_CLS}>Overview</TabsTrigger>

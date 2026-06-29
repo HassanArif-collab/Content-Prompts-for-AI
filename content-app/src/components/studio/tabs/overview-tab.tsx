@@ -56,7 +56,7 @@ export function OverviewTab({ project, onOpenTab }: {
           {project.title}
         </h2>
         {project.logline && (
-          <p className="text-lg text-foreground/80 max-w-3xl leading-relaxed">
+          <p className="text-lg text-foreground max-w-3xl leading-relaxed">
             {project.logline}
           </p>
         )}
