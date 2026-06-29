@@ -5,10 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { InlineEditor } from './InlineEditor'
 import { AssetDock } from './AssetDock'
-import {
-  GripVertical, MoreHorizontal, Copy, Check,
-  Sparkles, Loader2,
-} from 'lucide-react'
+import { GripVertical, Copy, Check, Sparkles, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Shot {
@@ -37,19 +34,13 @@ interface ShotBlockProps {
   remotionCode?: string
 }
 
-const ARCHETYPE_COLORS: Record<string, string> = {
-  SECTION_TITLE_CARD: 'bg-muted text-muted-foreground',
-  STAT_COUNTER: 'bg-muted text-muted-foreground',
-  BAR_CHART: 'bg-muted text-muted-foreground',
-  LINE_GRAPH: 'bg-muted text-muted-foreground',
-  PIE_CHART: 'bg-muted text-muted-foreground',
-  FLOW_DIAGRAM: 'bg-muted text-muted-foreground',
-  SCREENSHOT_HIGHLIGHT: 'bg-muted text-muted-foreground',
-  DOC_HIGHLIGHT: 'bg-muted text-muted-foreground',
-  EMOTIONAL_MOMENT: 'bg-muted text-muted-foreground',
-  BROLL_VIDEO: 'bg-muted text-muted-foreground',
-  TEXT_ANNOTATION: 'bg-muted text-muted-foreground',
-  GSAP_METAPHOR: 'bg-muted text-muted-foreground',
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{label}</div>
+      {children}
+    </div>
+  )
 }
 
 export function ShotBlock({
@@ -66,8 +57,13 @@ export function ShotBlock({
     toast.success('Code copied')
   }
 
+  const status = shot.asset?.status
+  const statusClass = status === 'failed'
+    ? 'bg-muted text-destructive'
+    : 'bg-muted text-muted-foreground'
+
   return (
-    <div className="border border-border/60 rounded-lg bg-card overflow-hidden group">
+    <div className="border border-border/60 rounded-xl bg-card overflow-hidden group">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/20">
         <GripVertical className="w-4 h-4 text-muted-foreground/40 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -75,76 +71,61 @@ export function ShotBlock({
         <Badge variant="outline" className="text-[10px] uppercase">{shot.archetype}</Badge>
         <span className="text-xs text-muted-foreground tabular-nums">{shot.duration}s</span>
         <div className="flex-1" />
-        {shot.asset?.status && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-            shot.asset.status === 'ready' || shot.asset.status === 'generated' ? 'bg-emerald-500/10 text-emerald-600' :
-            shot.asset.status === 'generating' ? 'bg-amber-500/10 text-amber-600' :
-            shot.asset.status === 'failed' ? 'bg-rose-500/10 text-rose-600' :
-            'bg-muted text-muted-foreground'
-          }`}>
-            {shot.asset.status}
-          </span>
-        )}
+        {status && <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusClass}`}>{status}</span>}
       </div>
 
-      {/* Body — two columns side by side */}
-      <div className="grid md:grid-cols-2 gap-0">
-        {/* Left: Shot details (inline editable) */}
-        <div className="p-4 space-y-2.5 border-r border-border/40">
-          <div>
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Visual</label>
-            <InlineEditor value={shot.visual} onSave={(v) => onUpdate('visual', v)} multiline className="text-sm" placeholder="What appears on screen..." />
-          </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Motion</label>
-            <InlineEditor value={shot.motion} onSave={(v) => onUpdate('motion', v)} className="text-sm" placeholder="How it moves..." />
-          </div>
-          {shot.textOverlay && (
-            <div>
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Text Overlay</label>
-              <InlineEditor value={shot.textOverlay} onSave={(v) => onUpdate('textOverlay', v)} className="text-sm" placeholder="Text shown on screen..." />
-            </div>
+      {/* Asset hero — large, full width */}
+      <div className="p-4 space-y-4">
+        <AssetDock
+          animationCode={remotionCode}
+          imageBase64={previewImage}
+          videoPath={shot.asset?.path}
+          assetStatus={shot.asset?.status as 'pending' | 'generating' | 'ready' | 'failed' | undefined}
+          shotId={shot.id}
+          shotArchetype={shot.archetype}
+        />
+
+        {onRenderPreview && (
+          <Button onClick={onRenderPreview} disabled={rendering} size="sm" variant="outline" className="w-full">
+            {rendering ? <><Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Rendering…</> : <><Sparkles className="w-3 h-3 mr-1.5" /> Render preview</>}
+          </Button>
+        )}
+
+        {/* Details — inline editable, two columns on wider shots */}
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+          <Field label="Visual">
+            <InlineEditor value={shot.visual} onSave={(v) => onUpdate('visual', v)} multiline className="text-sm" placeholder="What appears on screen…" />
+          </Field>
+          <Field label="Motion">
+            <InlineEditor value={shot.motion} onSave={(v) => onUpdate('motion', v)} className="text-sm" placeholder="How it moves…" />
+          </Field>
+          {shot.textOverlay !== undefined && (
+            <Field label="Text overlay">
+              <InlineEditor value={shot.textOverlay} onSave={(v) => onUpdate('textOverlay', v)} className="text-sm" placeholder="Text shown on screen…" />
+            </Field>
           )}
-          <div>
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Narration</label>
+          <div className="sm:col-span-2">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Narration</div>
             <div className="text-sm text-muted-foreground italic border-l-2 border-border pl-2">{shot.narration || 'No narration'}</div>
           </div>
-          {/* Remotion code */}
-          {remotionCode && (
-            <div>
-              <button onClick={() => setShowCode(!showCode)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                {showCode ? 'Hide' : 'Show'} code
-              </button>
-              {showCode && (
-                <div className="relative mt-1">
-                  <pre className="text-[10px] font-mono p-2 rounded bg-muted/40 border border-border/40 max-h-32 overflow-auto studio-scroll">
-                    <code>{remotionCode}</code>
-                  </pre>
-                  <button onClick={copyCode} className="absolute top-1 right-1 p-1 rounded bg-background/80 hover:bg-muted">
-                    {codeCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Right: AssetDock + Preview */}
-        <div className="p-4 space-y-3">
-          <AssetDock
-            animationCode={remotionCode}
-            imageBase64={previewImage}
-            videoPath={shot.asset?.path}
-            assetStatus={shot.asset?.status as any}
-            shotId={shot.id}
-            shotArchetype={shot.archetype}
-          />
-          {onRenderPreview && (
-            <Button onClick={onRenderPreview} disabled={rendering} size="sm" variant="outline" className="w-full">
-              {rendering ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Rendering...</> : <><Sparkles className="w-3 h-3 mr-1" /> Render Preview</>}
-            </Button>
-          )}
-        </div>
+        {/* Remotion / animation code */}
+        {remotionCode && (
+          <div>
+            <button onClick={() => setShowCode(!showCode)} className="text-xs text-muted-foreground hover:text-foreground">
+              {showCode ? 'Hide' : 'Show'} code
+            </button>
+            {showCode && (
+              <div className="relative mt-1">
+                <pre className="text-[10px] font-mono p-2 rounded bg-muted/40 border border-border/40 max-h-40 overflow-auto studio-scroll"><code>{remotionCode}</code></pre>
+                <button onClick={copyCode} className="absolute top-1 right-1 p-1 rounded bg-background/80 hover:bg-muted">
+                  {codeCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

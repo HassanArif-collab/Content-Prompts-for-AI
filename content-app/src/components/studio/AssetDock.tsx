@@ -33,12 +33,7 @@ export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, ass
       <div className="px-3 py-2 border-b border-border/40 flex items-center gap-2">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Asset Dock</span>
         {assetStatus && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-            assetStatus === 'ready' ? 'bg-emerald-500/10 text-emerald-600' :
-            assetStatus === 'generating' ? 'bg-amber-500/10 text-amber-600' :
-            assetStatus === 'failed' ? 'bg-rose-500/10 text-rose-600' :
-            'bg-muted text-muted-foreground'
-          }`}>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded ${assetStatus === 'failed' ? 'bg-muted text-destructive' : 'bg-muted text-muted-foreground'}`}>
             {assetStatus}
           </span>
         )}
