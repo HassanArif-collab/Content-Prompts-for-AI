@@ -22,7 +22,7 @@ Read these first:
 
 ## GLOBAL RULES
 1. Do not generate assets that are not called for by the decision log or guidance document.
-2. Log every created file to `qa/agent_log.txt`.
+2. Log every created file to `qa/agent_log.txt` using: `[AGENT] [ISO_TIMESTAMP] [FILE] [STATUS: OK/FALLBACK/REGEN/BLOCKED/FAILED] [NOTE]`
 3. Keep generated imagery text-free unless it's a recreated document with designed text.
 4. Maintain palette discipline from the Style Bible.
 5. If a screenshot is blocked or paywalled, log it and use the approved fallback path.

@@ -55,6 +55,11 @@ Turn the script into a numbered line inventory.
 
 ---
 
+### Visual Technique and Narrative Purpose
+For every beat, defer the per-line Visual Technique + Narrative Purpose assignment to `v6/agent_visual_planner.md` (which produces `shotlist.json`). Creative Direction only sets the **global** technique palette and beat-type guidance in `documents/Visual_Style_Bible.md`. The planner assigns the per-line technique based on that palette.
+
+---
+
 ## VISUAL STYLE BIBLE REQUIREMENTS
 Write `documents/Visual_Style_Bible.md` with these sections:
 - Mood statement

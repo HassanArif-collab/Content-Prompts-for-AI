@@ -45,6 +45,17 @@ The AI states WHY it chose the technique (5-15 words). Examples:
 5. Do not overstuff prompts with every possible adjective.
 6. **Always include: [VISUAL TECHNIQUE] + [NARRATIVE PURPOSE] before the base formula.**
 
+### Visual Technique Guidance by Beat Type
+| Beat Category | Preferred Technique | Why |
+|--------------|---------------------|-----|
+| Evidence / document | `HANDDRAWN_SKETCH` or `PHOTOREAL_CINEMATIC` | Credibility and investigatory feel |
+| System / process explanation | `ISOMETRIC_ILLUSTRATION` or `FLAT_2D_ILLUSTRATION` | Clarity of hidden structure |
+| Human cost / emotional weight | `WATERCOLOR_WASH` or `PAPERCUT_STOPMOTION` | Tactile, emotional texture |
+| Abstract force (corruption, trade, influence) | `CLAYMATION` or `ISOMETRIC_ILLUSTRATION` | Makes the invisible visible |
+| Future / hypothetical | `SOFT_3D_RENDER` or `FLAT_2D_ILLUSTRATION` | Signals speculation clearly |
+| History / archival | `RETRO_FILM` | Temporal distance, generational context |
+| Data / ranking / comparison | `DATA_INFographic` | Quick numerical comprehension |
+
 ---
 
 ## IMAGE PROMPT FORMULA (Dreamina GPT Image 2 / nano banana)
@@ -79,6 +90,8 @@ Negative requirements: no visible subtitles, no on-screen text, no lower thirds,
 - For crowded public context: `observational, non-performative behavior`
 - For audio-synced shots: `match transitions to audio downbeat, sync motion to voice cadence`
 - For character consistency: `same person, identical face and wardrobe as reference image`
+- For corruption, secrecy, pressure, or institutional decay themes: `serious institutional atmosphere, not thriller poster`
+- For evidence or documents: `slow, careful movement that respects readability`
 
 ---
 

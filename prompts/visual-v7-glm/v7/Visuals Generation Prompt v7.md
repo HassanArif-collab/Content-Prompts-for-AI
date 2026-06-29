@@ -274,6 +274,20 @@ Hard rules for sub-agents:
 5. Build agents may work in parallel only after required assets exist and only when rows do not depend on each other.
 6. QA should review row outputs continuously, not only at the very end.
 
+## CHAT FALLBACK MODE (Legacy GLM Stability Rules)
+
+v7 normally runs through the Documentary Studio app, which handles batching and context. If the user explicitly launches from chat without providing an `<APP_URL>`, apply these legacy v5/v6 GLM safeguards to prevent session crashes:
+
+1. **Micro-batching render rule**: Never run a single render script across all compositions. Render in batches of **10 compositions max**. After each batch, print a status update to chat (the "activity signal") to reset the timeout clock.
+
+2. **Context budget rule (Phase 3)**: Build agents process **max 12 rows** per invocation. Pass only the matching Decision Log + Guidance Document rows for that batch. Use `HANDOFF_NOTE` in `qa/phase_state.txt`.
+
+3. **Phase state format**: Use exact strings — `PHASE_0_CREATIVE_DIRECTION: COMPLETE`, `PHASE_1_ASSETS: COMPLETE (N assets, M fallbacks)`, `PHASE_2_BUILD: IN_PROGRESS (row X of Y)`, `PHASE_3_QA: COMPLETE`.
+
+4. **Mode declaration**: Always state at run start: `MODE: APP_MEDIATED` or `MODE: CHAT_FALLBACK`.
+
+---
+
 ## WORKFLOW ORCHESTRATION
 
 ### Phase 0 — Setup and Recovery
@@ -417,7 +431,7 @@ At final completion, print:
 
 ```text
 ========================================
-DOCUMENTARY VISUAL FACTORY v6 COMPLETE
+DOCUMENTARY VISUAL FACTORY v7 COMPLETE
 ========================================
 Output folder: doc-visuals/
 
