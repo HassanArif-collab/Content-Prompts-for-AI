@@ -33,10 +33,10 @@ interface VisualPlan {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground border-border',
-  in_review: 'bg-muted text-muted-foreground border-amber-500/30',
-  approved: 'bg-muted text-muted-foreground border-emerald-500/30',
-  changes_requested: 'bg-muted text-muted-foreground border-rose-500/30',
-  rendered: 'bg-muted text-muted-foreground border-violet-500/30',
+  in_review: 'bg-muted text-foreground border-border',
+  approved: 'bg-foreground text-background border-transparent',
+  changes_requested: 'bg-muted text-foreground border-border',
+  rendered: 'bg-muted text-muted-foreground border-border',
 }
 
 const BOARD_COLUMNS = ['draft', 'in_review', 'approved', 'rendered']
@@ -164,7 +164,7 @@ export function VisualPlansTab({ project, onChange }: {
                   <div key={`${plan.id}-${shot.id}`} className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground w-16 shrink-0">Shot {i + 1}</span>
                     <div className="flex-1 bg-muted/30 rounded h-8 relative overflow-hidden">
-                      <div className="h-full bg-amber-500/40 border-r border-border/60 flex items-center px-2" style={{ width: `${widthPct}%` }}>
+                      <div className="h-full bg-foreground/15 border-r border-border/60 flex items-center px-2" style={{ width: `${widthPct}%` }}>
                         <span className="text-[10px] truncate">{shot.archetype}</span>
                       </div>
                     </div>
@@ -292,7 +292,7 @@ function PlanInline({ plan, onRefresh, onChange, projectId, selectedPlan, setSel
         {feedback.length > 0 && (
           <div className="space-y-1.5">
             {feedback.map((f, i) => (
-              <div key={i} className={`text-xs p-2 rounded ${f.role === 'user' ? 'bg-primary/10 border border-primary/20' : f.role === 'system' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-muted/40'}`}>
+              <div key={i} className={`text-xs p-2 rounded ${f.role === 'user' ? 'bg-muted border border-border' : f.role === 'system' ? 'bg-muted/60 border border-border' : 'bg-muted/40'}`}>
                 <span className="font-medium uppercase text-[10px] mr-2">{f.role}</span>
                 {f.content}
               </div>
@@ -305,7 +305,7 @@ function PlanInline({ plan, onRefresh, onChange, projectId, selectedPlan, setSel
             <Send className="w-3 h-3 mr-1" /> Save + copy
           </Button>
           {plan.status !== 'approved' && plan.status !== 'rendered' && (
-            <Button onClick={approve} disabled={acting} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button onClick={approve} disabled={acting} size="sm">
               <Check className="w-3 h-3 mr-1" /> Approve
             </Button>
           )}

@@ -227,10 +227,9 @@ export function ScriptTab({ project, onChange }: {
                     raw markers only while editing. No separate preview box. */}
                 <div className="px-5 py-4">
                   <RichBlockEditor
-                    value={s.content}
+                    content={s.content}
                     onSave={(v) => saveField(s.id, 'content', v)}
                     onFootnoteClick={handleFootnoteClick}
-                    nextFootnote={nextFootnoteNumber(s.content)}
                   />
 
                   {/* AI Expand panel (inline, not a dialog) */}

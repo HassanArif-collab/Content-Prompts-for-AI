@@ -117,7 +117,7 @@ export function ResearchTab({ project, onChange }: {
 
       {/* Add topic inline */}
       {addingParent && (
-        <Card className="p-4 border-dashed border-amber-500/40 bg-amber-500/5">
+        <Card className="p-4 border-dashed border-border bg-muted/40">
           <div className="flex items-center gap-3">
             <Select value={newCategory} onValueChange={setNewCategory}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
@@ -189,7 +189,7 @@ function TopicNode({ note, childNotes, matches, projectId, onChange, onAddChild,
           {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
         {isLink ? (
-          <a href={note.url} target="_blank" rel="noopener noreferrer" className="p-0.5 text-muted-foreground hover:text-sky-500" title={note.url}>
+          <a href={note.url} target="_blank" rel="noopener noreferrer" className="p-0.5 text-muted-foreground hover:text-foreground" title={note.url}>
             <Link2 className="w-4 h-4" />
           </a>
         ) : (
@@ -256,7 +256,7 @@ function ChildRow({ note, onSaveField, onDelete }: {
   return (
     <div className="group flex items-center gap-1.5 py-1 px-2 rounded-md hover:bg-muted/40">
       {isLink ? (
-        <a href={note.url} target="_blank" rel="noopener noreferrer" className="p-0.5 text-muted-foreground hover:text-sky-500" title={note.url}>
+        <a href={note.url} target="_blank" rel="noopener noreferrer" className="p-0.5 text-muted-foreground hover:text-foreground" title={note.url}>
           <Link2 className="w-3.5 h-3.5" />
         </a>
       ) : (
@@ -316,7 +316,7 @@ function AiResearchInline({ projectId, onResearched, onClose }: {
   }
 
   return (
-    <Card className="p-4 border-amber-500/30 bg-amber-500/5">
+    <Card className="p-4 border-border bg-muted/40">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-medium flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /> AI Research</h4>
         <button onClick={onClose} className="p-1 rounded hover:bg-muted"><span className="text-xs">Close</span></button>
@@ -333,10 +333,10 @@ function AiResearchInline({ projectId, onResearched, onClose }: {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium">Generated notes ({result.notes.length})</span>
-                <Button size="sm" onClick={importAll} className="h-7 text-xs bg-gradient-to-br from-amber-500 to-orange-600 text-white">Import all</Button>
+                <Button size="sm" onClick={importAll} className="h-7 text-xs">Import all</Button>
               </div>
               {result.notes.map((note, i) => (
-                <div key={i} className="p-2 rounded border border-amber-500/20 bg-amber-500/5 text-xs">
+                <div key={i} className="p-2 rounded border border-border bg-muted/40 text-xs">
                   <span className="font-semibold">{note.title}</span>
                   <p className="text-muted-foreground mt-1 line-clamp-2">{note.content}</p>
                 </div>

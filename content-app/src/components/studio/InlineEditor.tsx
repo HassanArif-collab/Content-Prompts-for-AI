@@ -100,7 +100,7 @@ export function InlineEditor({
             onChange={(e) => setCurrentValue(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            className="w-full bg-transparent border-none outline-none resize-none p-0 m-0 font-inherit text-inherit leading-inherit focus:ring-2 focus:ring-amber-500/30 rounded px-1 -mx-1"
+            className="w-full bg-transparent border-none outline-none resize-none p-0 m-0 font-inherit text-inherit leading-inherit focus:ring-2 focus:ring-ring/40 rounded px-1 -mx-1"
             rows={Math.max(3, currentValue.split('\n').length)}
             style={{ minHeight: '2rem' }}
           />
@@ -112,7 +112,7 @@ export function InlineEditor({
             onChange={(e) => setCurrentValue(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            className="w-full bg-transparent border-none outline-none p-0 m-0 font-inherit text-inherit leading-inherit focus:ring-2 focus:ring-amber-500/30 rounded px-1 -mx-1"
+            className="w-full bg-transparent border-none outline-none p-0 m-0 font-inherit text-inherit leading-inherit focus:ring-2 focus:ring-ring/40 rounded px-1 -mx-1"
           />
         )}
       </div>
@@ -123,7 +123,7 @@ export function InlineEditor({
   return (
     <div
       onClick={handleStartEdit}
-      className={`cursor-text rounded px-1 -mx-1 transition-colors hover:bg-amber-500/5 ${className}`}
+      className={`cursor-text rounded px-1 -mx-1 transition-colors hover:bg-accent ${className}`}
       title="Click to edit"
     >
       {currentValue || <span className="text-muted-foreground/50 italic">{placeholder}</span>}
@@ -131,7 +131,7 @@ export function InlineEditor({
         <Loader2 className="inline-block w-3 h-3 ml-2 animate-spin text-muted-foreground" />
       )}
       {showSaveIndicator && saveState === 'saved' && (
-        <Check className="inline-block w-3 h-3 ml-2 text-emerald-500" />
+        <Check className="inline-block w-3 h-3 ml-2 text-muted-foreground" />
       )}
     </div>
   )

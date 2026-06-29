@@ -159,7 +159,7 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
                 size="icon"
                 variant="ghost"
                 onClick={() => setOpen(true)}
-                className="bg-gradient-to-br bg-muted hover:from-amber-600 hover:to-orange-700 text-white shadow-md "
+                className="shadow-md"
               >
                 <PanelRightOpen className="w-4 h-4" />
               </Button>
@@ -176,10 +176,10 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
   return (
     <div className="flex flex-col h-full w-full bg-background border-l border-border/60">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/60 bg-gradient-to-r bg-muted/20 flex items-center justify-between gap-2 shrink-0">
+      <div className="px-4 py-3 border-b border-border/60 bg-muted/20 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-md bg-gradient-to-br bg-muted flex items-center justify-center shrink-0">
-            <Bot className="w-4 h-4 text-white" />
+          <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="min-w-0">
             <div className="font-editorial text-sm font-semibold leading-tight">AI Co-pilot</div>
@@ -261,7 +261,7 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
               <X className="w-4 h-4" />
             </Button>
           ) : (
-            <Button onClick={() => send(input)} disabled={!input.trim()} size="icon" className="h-10 w-10 shrink-0 bg-gradient-to-br bg-muted hover:from-amber-600 hover:to-orange-700">
+            <Button onClick={() => send(input)} disabled={!input.trim()} size="icon" className="h-10 w-10 shrink-0">
               <Send className="w-4 h-4" />
             </Button>
           )}
@@ -277,7 +277,7 @@ export function AiAssistant({ projectId, projectTitle }: AssistantProps) {
 function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-8">
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br bg-muted flex items-center justify-center mb-4">
+      <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
         <Wand2 className="w-7 h-7 text-muted-foreground" />
       </div>
       <h3 className="font-editorial text-lg font-semibold mb-1.5">Your AI co-pilot</h3>
@@ -289,9 +289,9 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
           <button
             key={q.label}
             onClick={() => onPick(q.prompt)}
-            className="text-left p-3 rounded-lg border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/5 transition-all flex items-start gap-2.5"
+            className="text-left p-3 rounded-lg border border-border/60 hover:border-border hover:bg-accent transition-all flex items-start gap-2.5"
           >
-            <div className="w-7 h-7 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0">
               <q.icon className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
@@ -301,10 +301,10 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
         ))}
         <button
           onClick={() => onPick(BROWSE_PROMPT.prompt)}
-          className="text-left p-3 rounded-lg border border-sky-500/40 bg-sky-500/5 hover:bg-sky-500/10 transition-all flex items-start gap-2.5"
+          className="text-left p-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-accent transition-all flex items-start gap-2.5"
         >
-          <div className="w-7 h-7 rounded-md bg-sky-500/20 flex items-center justify-center shrink-0">
-            <BROWSE_PROMPT.icon className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+          <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0">
+            <BROWSE_PROMPT.icon className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium">{BROWSE_PROMPT.label}</div>
@@ -320,8 +320,8 @@ function MessageBubble({ message, streaming }: { message: Message; streaming: bo
   const isUser = message.role === 'user'
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-      <div className={`w-7 h-7 rounded-md shrink-0 flex items-center justify-center ${isUser ? 'bg-muted' : 'bg-gradient-to-br bg-muted'}`}>
-        {isUser ? <User className="w-3.5 h-3.5 text-muted-foreground" /> : <Bot className="w-3.5 h-3.5 text-white" />}
+      <div className="w-7 h-7 rounded-md shrink-0 flex items-center justify-center bg-muted">
+        {isUser ? <User className="w-3.5 h-3.5 text-muted-foreground" /> : <Bot className="w-3.5 h-3.5 text-muted-foreground" />}
       </div>
       <div className={`flex-1 min-w-0 ${isUser ? 'text-right' : ''}`}>
         <div className={`inline-block text-sm leading-relaxed text-left rounded-lg px-3.5 py-2.5 max-w-[90%] ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted/60 border border-border/40'}`}>

@@ -104,7 +104,7 @@ export function OverviewTab({ project, onOpenTab }: {
           </div>
 
           {scriptMinutes < project.targetRuntime * 0.5 && project.scriptSections.length > 0 && (
-            <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+            <div className="mt-4 p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground flex items-start gap-2">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
                 Your script is significantly under target. Consider expanding Act II or adding a third narrative beat — long-form documentaries usually need at least {Math.round(project.targetRuntime * project.narrationWpm).toLocaleString()} words to fill the runtime.
@@ -202,7 +202,7 @@ function StatTile({ label, value, icon, hint, onClick }: {
 }) {
   return (
     <button onClick={onClick} className="text-left">
-      <Card className="p-5 border-border/60 hover:border-border hover:shadow-md transition-all h-full">
+      <Card className="p-5 border-border/60 hover:border-border transition-colors h-full">
         <div className="flex items-center gap-2 text-muted-foreground text-xs mb-2">
           {icon}<span>{label}</span>
         </div>
