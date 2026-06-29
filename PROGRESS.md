@@ -7,8 +7,8 @@
 
 ## CURRENT STATE
 
-- **Last updated**: 2026-06-27
-- **Current step**: Step 4
+- **Last updated**: 2026-06-29
+- **Current step**: v7 prompt gap closure (out-of-band, not part of 6-step plan)
 - **Overall status**: IN PROGRESS
 
 ---
@@ -23,6 +23,7 @@
 | 4. UI + Remotion preview test | NOT STARTED | - | - | - |
 | 5. Dreamina/Flow routing test | NOT STARTED | - | - | - |
 | 6. Typecheck, commit, push | NOT STARTED | - | - | - |
+| 7. v7 prompt gap closure (surgical) | COMPLETED | 2026-06-29 | 2026-06-29 | Restored GLM-era stability, logging, technique routing into v7. Pushed as commit 55990ff. |
 
 ---
 
@@ -82,7 +83,33 @@
 
 ---
 
+### Step 7: v7 prompt gap closure (out-of-band)
+**Status**: COMPLETED
+**Commit hash**: `55990ff`
+**Push status**: PUSHED to `origin/main`
+**Scope**: 6 surgical edits, 34 insertions, 2 deletions across 4 files.
+
+**Findings vs v5/v6 GLM**:
+- Pexels B-Roll (sec 4) and Lottie Files (sec 5) were ALREADY present in v7 `agent_asset_generation.md` (lines 102, 105) — earlier comparison misread them as missing.
+- Genuinely missing items: log format spec, micro-batching/context budget rules, phase state format, per-line technique delegation from Creative Direction, beat-type guidance table, two missing video add-ons, stale `v6 COMPLETE` label.
+
+**Edits applied**:
+1. `agent_asset_generation.md`: restored log format `[AGENT][TS][FILE][STATUS: OK/FALLBACK/REGEN/BLOCKED/FAILED][NOTE]`.
+2. `Visuals Generation Prompt v7.md`: added `CHAT FALLBACK MODE` section with micro-batching (10 max), context budget (12 rows max), phase state format, and `MODE: APP_MEDIATED|CHAT_FALLBACK` declaration. Fixed stale `DOCUMENTARY VISUAL FACTORY v6 COMPLETE` label to `v7`.
+3. `agent_creative_direction.md`: added 5-line subsection delegating per-line Visual Technique + Narrative Purpose assignment to `agent_visual_planner.md` (which produces `shotlist.json`).
+4. `prompt_formulas.md`: added Beat Type Guidance table (7 rows mapping beat category -> preferred technique) and 2 missing video add-ons (corruption/institutional decay, evidence/documents).
+
+**Preserved**: v7 app-connection protocol, Remotion stack, BROWSER TASK contract, tool router, browser runtime, browser capabilities, Lottie support, visual archetypes, failure taxonomy, visual guidance template, composition build, QA repair, visual planner.
+
+**Notes for next session**:
+- Chat Fallback Mode is opt-in: only activates when user runs from chat without providing `<APP_URL>`. App-mediated runs are unaffected.
+- If v6 Claude-specific changes are wanted later, compare against `Visual Generation v6 Claude/` in old directory — not done here.
+
+---
+
 ## BLOCKERS
+
+(none for v7 prompt gap closure)
 
 (Add any blockers here. If a step is blocked, note why and move on.)
 
