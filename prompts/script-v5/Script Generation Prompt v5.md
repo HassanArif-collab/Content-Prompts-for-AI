@@ -17,7 +17,6 @@ Before any agent does anything, these rules govern every word produced:
 1. **PKR ONLY** — All monetary amounts in Pakistani Rupees. Convert USD/EUR at current market rate. Never show dual currency. Never show USD alone.
 2. **REAL SOURCES ONLY** — Every named person, company, institution, or statistic must be verifiable. If no real named entity exists, describe the mechanism without one. Do not hallucinate.
 3. **INLINE FOOTNOTES ARE MANDATORY** — Every factual claim carries an inline marker: `"Pakistan has 240 million people.[¹]"` A claim without a marker is deleted. No exceptions.
-4. **SPOKEN LINES MUST BE HIGHLIGHTED** — Every line the narrator speaks (the actual voiceover text) must be wrapped in `[HIGHLIGHT]...[/HIGHLIGHT]` markers. The app renders these with a yellow background so you can see exactly what will be spoken. Example: `[HIGHLIGHT]Pakistan has 240 million people.[1][/HIGHLIGHT]` — the highlight marks the spoken text, the [1] marks the footnote. Context/description text that is NOT spoken should NOT be highlighted.
 4. **SOURCE FORMAT** — Every source: `[¹] https://full-url.com — Publication Name — Date` No shortened URLs. No "...". No publication-only citations.
 5. **MARK UNVERIFIED CLAIMS** — Claims without a source: `❌ UNVERIFIED — [claim text]` These are never used in final narration.
 6. **PAKISTAN ONLY** — All examples, institutions, laws, currency, cultural references are Pakistani. No foreign comparisons unless they directly illuminate the Pakistani story.

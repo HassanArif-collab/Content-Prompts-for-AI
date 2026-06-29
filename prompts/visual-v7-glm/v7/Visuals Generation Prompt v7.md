@@ -105,6 +105,12 @@ The user pastes their tunnel URL at the start of the session. It looks like:
   "visual": "Big number 312 counting up from 0",
   "motion": "Count up over 2s, hold 2s",
   "textOverlay": "312 maps",
+  "presenter": {
+    "appears": false,
+    "cameraAngle": "",
+    "location": "",
+    "wardrobe": ""
+  },
   "narration": "Margit drew three hundred and twelve maps.",
   "asset": {
     "capability": "dreamina.still_image",
@@ -114,6 +120,20 @@ The user pastes their tunnel URL at the start of the session. It looks like:
   }
 }
 ```
+
+### Presenter field
+
+The `presenter` object marks whether **you (the documentary host/presenter)** appear on camera in this shot:
+
+- `"appears": true` — You are visible on screen (A-roll, talking head, walking shot, etc.)
+- `"appears": false` — This is a pure visual shot (B-roll, animation, chart, archival, etc.)
+
+When `appears: true`, also specify:
+- `cameraAngle`: "CU" (close-up), "MS" (medium shot), "WS" (wide shot), or "OTS" (over-the-shoulder)
+- `location`: Where you are (e.g., "archive reading room", "outdoors at building exterior")
+- `wardrobe`: What you are wearing (e.g., "dark jacket", "casual")
+
+This lets the storyboard show which shots have you on camera vs pure visuals.
 
 ### Browser task JSON shape
 
