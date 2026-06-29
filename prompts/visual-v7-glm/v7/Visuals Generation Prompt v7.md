@@ -107,10 +107,9 @@ The user pastes their tunnel URL at the start of the session. It looks like:
   "textOverlay": "312 maps",
   "presenter": {
     "appears": false,
-    "cameraAngle": "",
-    "location": "",
-    "wardrobe": ""
+    "note": ""
   },
+  "highlight": false,
   "narration": "Margit drew three hundred and twelve maps.",
   "asset": {
     "capability": "dreamina.still_image",
@@ -123,17 +122,21 @@ The user pastes their tunnel URL at the start of the session. It looks like:
 
 ### Presenter field
 
-The `presenter` object marks whether **you (the documentary host/presenter)** appear on camera in this shot:
+The `presenter` object marks whether **you (the host) are on camera talking** in this shot:
 
-- `"appears": true` — You are visible on screen (A-roll, talking head, walking shot, etc.)
-- `"appears": false` — This is a pure visual shot (B-roll, animation, chart, archival, etc.)
+- `"appears": true` — You are sitting in your studio talking to the camera. Visuals/graphics play on top of or beside you.
+- `"appears": false` — Pure visual shot (B-roll, animation, chart, archival). You are not on screen.
 
-When `appears: true`, also specify:
-- `cameraAngle`: "CU" (close-up), "MS" (medium shot), "WS" (wide shot), or "OTS" (over-the-shoulder)
-- `location`: Where you are (e.g., "archive reading room", "outdoors at building exterior")
-- `wardrobe`: What you are wearing (e.g., "dark jacket", "casual")
+When `appears: true`, use `note` for any optional detail (e.g., "fullscreen presenter", "presenter with chart overlay", "presenter lower third only"). Leave empty if just standard talking head.
 
-This lets the storyboard show which shots have you on camera vs pure visuals.
+### Highlight field
+
+The `highlight` field marks shots where **visuals are playing on top of you** (the presenter) while you talk:
+
+- `"highlight": true` — Visuals/graphics/footage are overlayed on top of the presenter shot.
+- `"highlight": false` — Standard shot, no overlay on presenter.
+
+This lets the storyboard distinguish between clean talking-head shots and shots with visual overlays on the presenter.
 
 ### Browser task JSON shape
 
