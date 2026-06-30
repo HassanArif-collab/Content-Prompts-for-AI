@@ -71,15 +71,6 @@ export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, ass
       </div>
 
       <div className="p-3 space-y-3">
-        {/* Attach a manually-generated asset (copy prompt → Flow/ChatGPT → drop the file here) */}
-        {onAttached && (
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer rounded-md border border-dashed border-border/60 px-3 py-2 hover:bg-accent">
-            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            {uploading ? 'Uploading…' : 'Attach image or video'}
-            <input type="file" accept="image/*,video/mp4,video/webm" className="hidden" disabled={uploading} onChange={handleUpload} />
-          </label>
-        )}
-
         {/* Generation pipeline — how this shot's visual gets made */}
         {pipeline && pipeline.length > 0 && (
           <div className="space-y-1.5">
@@ -164,12 +155,22 @@ export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, ass
           </div>
         )}
 
-        {/* Placeholder when no assets */}
+        {/* No asset + no code → this shot needs an external image/video, so the
+            preview area itself becomes the dropzone (only here, not on code shots). */}
         {!hasAnimation && !hasImage && !hasVideo && (
-          <div className="flex flex-col items-center justify-center py-6">
-            <Play className="w-6 h-6 text-muted-foreground/20 mb-1" />
-            <p className="text-xs text-muted-foreground/50">No assets yet</p>
-          </div>
+          onAttached ? (
+            <label className="flex flex-col items-center justify-center gap-1.5 py-8 cursor-pointer rounded-md border border-dashed border-border/60 hover:bg-accent text-center">
+              {uploading ? <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /> : <Upload className="w-6 h-6 text-muted-foreground/50" />}
+              <p className="text-xs text-muted-foreground">{uploading ? 'Uploading…' : 'Drop or click to add image / video'}</p>
+              <p className="text-[10px] text-muted-foreground/50">Generate from the prompt above, then add it here</p>
+              <input type="file" accept="image/*,video/mp4,video/webm" className="hidden" disabled={uploading} onChange={handleUpload} />
+            </label>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6">
+              <Play className="w-6 h-6 text-muted-foreground/20 mb-1" />
+              <p className="text-xs text-muted-foreground/50">No assets yet</p>
+            </div>
+          )
         )}
       </div>
     </div>
