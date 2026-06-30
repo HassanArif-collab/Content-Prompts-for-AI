@@ -20,6 +20,26 @@ const SCENE_STATUSES = [
 
 type View = 'table' | 'board' | 'gallery'
 
+// Basic visual type per line — the lightweight first pass the user reviews before
+// detailed visual plans. Stored as a [visualType:...] tag in the scene description.
+const VISUAL_TYPES = [
+  'image', 'effect', 'bar chart', 'line graph', 'chart', 'mood',
+  'presenter', 'presenter + overlay', 'motion graphic', 'b-roll', 'archival',
+]
+
+// Map a linked shot archetype (from the visual plan) to a default visual type.
+function archetypeToVisualType(archetype: string): string {
+  const a = (archetype || '').toUpperCase()
+  if (a.includes('BAR_CHART')) return 'bar chart'
+  if (a.includes('LINE_GRAPH')) return 'line graph'
+  if (a.includes('PIE_CHART') || a.includes('CHART') || a.includes('COMPARISON')) return 'chart'
+  if (a.includes('STAT') || a.includes('FLOW_DIAGRAM') || a.includes('TITLE') || a.includes('TYPOGRAPHY') || a.includes('ANNOTATION')) return 'motion graphic'
+  if (a.includes('BROLL')) return 'b-roll'
+  if (a.includes('EMOTIONAL') || a.includes('METAPHOR')) return 'mood'
+  if (a.includes('SCREENSHOT') || a.includes('DOC')) return 'image'
+  return ''
+}
+
 // Aesthetic / Visual style / Presenter are stored as inline tags inside the
 // scene description so we avoid a schema change. ponytail: tag-in-description,
 // add real columns when the Scene model gains the fields.
@@ -55,14 +75,14 @@ export function StoryboardTab({ project, onChange }: {
 
   // Join: presenter/aesthetic come from the linked visual-plan shots (v7 sets
   // linkedSceneId), falling back to the inline description tag when unlinked.
-  const [sceneShots, setSceneShots] = useState<Record<string, { presenterAppears: boolean; aesthetic: string }[]>>({})
+  const [sceneShots, setSceneShots] = useState<Record<string, { presenterAppears: boolean; aesthetic: string; archetype: string; highlight: boolean }[]>>({})
   useEffect(() => {
     let cancelled = false
     fetch(`/api/projects/${project.id}/visual-plans`)
       .then(r => r.json())
       .then((plans) => {
         if (cancelled) return
-        const map: Record<string, { presenterAppears: boolean; aesthetic: string }[]> = {}
+        const map: Record<string, { presenterAppears: boolean; aesthetic: string; archetype: string; highlight: boolean }[]> = {}
         for (const plan of plans ?? []) {
           let shots: Array<Record<string, unknown>> = []
           try { shots = JSON.parse((plan.shotsJson as string) || '[]') } catch {}
@@ -70,7 +90,12 @@ export function StoryboardTab({ project, onChange }: {
             const sid = sh.linkedSceneId as string
             if (!sid) continue
             const presenter = sh.presenter as { appears?: boolean } | undefined
-            ;(map[sid] ??= []).push({ presenterAppears: !!presenter?.appears, aesthetic: (sh.aesthetic as string) || '' })
+            ;(map[sid] ??= []).push({
+              presenterAppears: !!presenter?.appears,
+              aesthetic: (sh.aesthetic as string) || '',
+              archetype: (sh.archetype as string) || '',
+              highlight: !!sh.highlight,
+            })
           }
         }
         setSceneShots(map)
@@ -79,11 +104,25 @@ export function StoryboardTab({ project, onChange }: {
     return () => { cancelled = true }
   }, [project.id])
 
+  // Default visual type from the linked shot: presenter+overlay > presenter > archetype mapping.
+  function defaultVisualType(scene: Scene): string {
+    const linked = sceneShots[scene.id]
+    if (linked && linked.length) {
+      if (linked.some(s => s.presenterAppears && s.highlight)) return 'presenter + overlay'
+      if (linked.some(s => s.presenterAppears)) return 'presenter'
+      const mapped = linked.map(s => archetypeToVisualType(s.archetype)).find(Boolean)
+      if (mapped) return mapped
+    }
+    return ''
+  }
+
   const columns: NotionColumn[] = [
-    { key: 'title', label: 'Scene', width: '200px' },
-    { key: 'aesthetic', label: 'Aesthetic', width: '130px' },
-    { key: 'visualStyle', label: 'Visual style', width: '130px' },
-    { key: 'presenter', label: 'Presenter', width: '110px' },
+    { key: 'title', label: 'Scene', width: '180px' },
+    { key: 'visualType', label: 'Visual type', width: '130px' },
+    { key: 'look', label: 'Look', width: '160px' },
+    { key: 'aesthetic', label: 'Aesthetic', width: '120px' },
+    { key: 'visualStyle', label: 'Visual style', width: '120px' },
+    { key: 'presenter', label: 'Presenter', width: '100px' },
     { key: 'duration', label: 'Duration', width: '80px', editable: false },
     { key: 'status', label: 'Status', width: '90px', editable: false },
   ]
@@ -91,6 +130,13 @@ export function StoryboardTab({ project, onChange }: {
   function getCellValue(scene: Scene, key: string): string {
     switch (key) {
       case 'title': return scene.title
+      case 'visualType': {
+        const tag = readTag(scene, 'visualType')
+        if (tag) return tag
+        const arch = sceneShots[scene.id]?.find(s => s.archetype)?.archetype
+        return arch ? archetypeToVisualType(arch) : ''
+      }
+      case 'look': return readTag(scene, 'look')
       case 'aesthetic': {
         const fromShot = sceneShots[scene.id]?.find(s => s.aesthetic)?.aesthetic
         return fromShot || readTag(scene, 'aesthetic')
@@ -120,7 +166,7 @@ export function StoryboardTab({ project, onChange }: {
     if (!scene) return
     if (key === 'title') return patchScene(rowId, { title: value })
     if (key === 'visualStyle') return patchScene(rowId, { shotType: value })
-    if (key === 'aesthetic' || key === 'presenter') {
+    if (key === 'aesthetic' || key === 'presenter' || key === 'visualType' || key === 'look') {
       return patchScene(rowId, { description: writeTag(scene, key, value) })
     }
   }

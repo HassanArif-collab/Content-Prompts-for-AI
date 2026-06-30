@@ -19,6 +19,7 @@ import { AiSettingsDialog } from './ai-settings-dialog'
 import { TunnelBanner } from './tunnel-banner'
 import { ThemeToggle } from './theme-toggle'
 import { CommandPalette } from './CommandPalette'
+import { SourceSidebar } from './SourceSidebar'
 
 export interface ResearchNote {
   id: string; projectId: string; parentId: string | null; title: string; content: string;
@@ -73,6 +74,7 @@ export function ProjectWorkspace() {
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [activeSource, setActiveSource] = useState<Source | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
   const triggerReload = () => setReloadKey(k => k + 1)
@@ -172,7 +174,7 @@ export function ProjectWorkspace() {
                 <ResearchTab project={project} onChange={triggerReload} />
               </TabsContent>
               <TabsContent value="script" className="mt-6">
-                <ScriptTab project={project} onChange={triggerReload} />
+                <ScriptTab project={project} onChange={triggerReload} onOpenSource={setActiveSource} />
               </TabsContent>
               <TabsContent value="storyboard" className="mt-6">
                 <StoryboardTab project={project} onChange={triggerReload} />
@@ -189,6 +191,12 @@ export function ProjectWorkspace() {
             </Tabs>
           </div>
         </main>
+
+        {/* Middle: source panel — slides in between the script and the co-pilot;
+            the script (main, flex-1) shifts left as this takes width. */}
+        <div className={`${activeSource ? 'w-[380px]' : 'w-0'} shrink-0 hidden md:block overflow-hidden transition-[width] duration-300 ease-in-out`}>
+          <SourceSidebar activeSource={activeSource} onClose={() => setActiveSource(null)} />
+        </div>
 
         {/* Right: AI Co-pilot sidebar (fixed width, full height).
             Desktop-only — documentary editing is a desktop activity.

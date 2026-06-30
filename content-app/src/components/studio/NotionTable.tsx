@@ -18,6 +18,8 @@ interface NotionTableProps<T> {
   getRowId: (row: T) => string
   getCellValue: (row: T, key: string) => string
   onCellEdit: (rowId: string, key: string, value: string) => void
+  /** Optional custom cell renderer; return null to fall back to default (InlineEditor / span). */
+  renderCell?: (row: T, col: NotionColumn) => React.ReactNode | null
   onRowExpand?: (rowId: string) => void
   expandedRowId?: string | null
   renderExpanded?: (row: T) => React.ReactNode
@@ -31,6 +33,7 @@ export function NotionTable<T>({
   getRowId,
   getCellValue,
   onCellEdit,
+  renderCell,
   onRowExpand,
   expandedRowId,
   renderExpanded,
@@ -78,7 +81,7 @@ export function NotionTable<T>({
                   style={{ width: col.width || 'auto', minWidth: col.width || '80px' }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {col.editable !== false ? (
+                  {renderCell?.(row, col) ?? (col.editable !== false ? (
                     <InlineEditor
                       value={getCellValue(row, col.key)}
                       onSave={(v) => onCellEdit(rowId, col.key, v)}
@@ -87,7 +90,7 @@ export function NotionTable<T>({
                     />
                   ) : (
                     <span className="text-sm text-foreground">{getCellValue(row, col.key) || '—'}</span>
-                  )}
+                  ))}
                 </div>
               ))}
             </div>

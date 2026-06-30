@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
   RefreshCw, Trash2, MessageSquare, Clock, Film, Code, Copy,
-  Loader2, Check, X, Send, Sparkles,
+  Loader2, Check, X, Send, Sparkles, FolderInput,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Project } from '../project-workspace'
@@ -199,6 +199,12 @@ function PlanInline({ plan, onRefresh, onChange, projectId, selectedPlan, setSel
   const shots: Shot[] = JSON.parse(plan.shotsJson || '[]')
   const feedback: FeedbackEntry[] = JSON.parse(plan.feedbackJson || '[]')
   const updated = formatDistanceToNow(new Date(plan.updatedAt), { addSuffix: true })
+
+  const [visualsFolder, setVisualsFolder] = useState('')
+  const [importing, setImporting] = useState(false)
+  useEffect(() => {
+    setVisualsFolder(localStorage.getItem(`visualsFolder:${projectId}`) || '')
+  }, [projectId])
 
   async function updatePlan(patch: Partial<VisualPlan>) {
     await fetch(`/api/visual-plans/${plan.id}`, {

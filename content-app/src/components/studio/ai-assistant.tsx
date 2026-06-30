@@ -20,6 +20,19 @@ interface Message {
   content: string
 }
 
+interface Mentionable {
+  id: string
+  type: 'section' | 'scene' | 'shot' | 'source'
+  label: string
+  context: string
+}
+
+// Trim a snippet for the context block / dropdown preview
+function snippet(s: string | undefined | null, max = 160): string {
+  const t = (s ?? '').replace(/\s+/g, ' ').trim()
+  return t.length > max ? t.slice(0, max - 1) + '…' : t
+}
+
 interface AssistantProps {
   projectId: string
   projectTitle: string
@@ -43,6 +56,13 @@ export function AiAssistant({ projectId, projectTitle, open, onOpenChange }: Ass
   const [streaming, setStreaming] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // @-mention state
+  const [mentionables, setMentionables] = useState<Mentionable[]>([])
+  const [chosen, setChosen] = useState<Mentionable[]>([]) // items referenced in the current input
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null) // text after '@', null = dropdown closed
+  const [mentionActive, setMentionActive] = useState(0) // highlighted dropdown index
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -51,13 +71,71 @@ export function AiAssistant({ projectId, projectTitle, open, onOpenChange }: Ass
     }
   }, [messages, streaming])
 
+  // Fetch referenceable project items when the panel opens
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [projRes, plansRes] = await Promise.all([
+          fetch(`/api/projects/${projectId}`),
+          fetch(`/api/projects/${projectId}/visual-plans`),
+        ])
+        const items: Mentionable[] = []
+        if (projRes.ok) {
+          const p = await projRes.json()
+          for (const s of p.scriptSections ?? [])
+            items.push({ id: `section:${s.id}`, type: 'section', label: s.heading || 'Untitled section', context: snippet(s.content) })
+          for (const s of p.scenes ?? [])
+            items.push({ id: `scene:${s.id}`, type: 'scene', label: s.title || 'Untitled scene', context: snippet(s.description) })
+          for (const s of p.sources ?? [])
+            items.push({ id: `source:${s.id}`, type: 'source', label: s.title || 'Untitled source', context: snippet(s.citation) })
+        }
+        if (plansRes.ok) {
+          const plans = await plansRes.json()
+          for (const plan of plans ?? []) {
+            let shots: { id?: string; archetype?: string; visual?: string }[] = []
+            try { shots = JSON.parse(plan.shotsJson || '[]') } catch { shots = [] }
+            shots.forEach((shot, i) => {
+              items.push({
+                id: `shot:${plan.id}:${shot.id ?? i}`,
+                type: 'shot',
+                label: shot.archetype || `Shot ${i + 1}`,
+                context: snippet(shot.visual),
+              })
+            })
+          }
+        }
+        if (!cancelled) setMentionables(items)
+      } catch {
+        // non-fatal — mentions just won't be available
+      }
+    })()
+    return () => { cancelled = true }
+  }, [open, projectId])
+
+  // Dropdown candidates filtered by the active @query (case-insensitive)
+  const mentionMatches = mentionQuery === null
+    ? []
+    : mentionables
+        .filter(m => m.label.toLowerCase().includes(mentionQuery.toLowerCase()))
+        .slice(0, 8)
+
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || streaming) return
 
-    const newMessages: Message[] = [...messages, { role: 'user', content: trimmed }]
+    // Prepend a compact context block for items actually mentioned (@<label>) in the message
+    const referenced = chosen.filter(m => trimmed.includes(`@${m.label}`))
+    const display = referenced.length
+      ? `Referenced items:\n${referenced.map(m => `- [${m.type}] ${m.label}: ${m.context}`).join('\n')}\n\n${trimmed}`
+      : trimmed
+
+    const newMessages: Message[] = [...messages, { role: 'user', content: display }]
     setMessages([...newMessages, { role: 'assistant', content: '' }])
     setInput('')
+    setChosen([])
+    setMentionQuery(null)
     setStreaming(true)
 
     const controller = new AbortController()
@@ -138,7 +216,35 @@ export function AiAssistant({ projectId, projectTitle, open, onOpenChange }: Ass
       setStreaming(false)
       abortRef.current = null
     }
-  }, [messages, streaming, projectId])
+  }, [messages, streaming, projectId, chosen])
+
+  // Detect an active "@query" token immediately before the caret
+  const onInputChange = useCallback((value: string, caret: number) => {
+    setInput(value)
+    const before = value.slice(0, caret)
+    const m = before.match(/(?:^|\s)@([^\s@]*)$/)
+    if (m) { setMentionQuery(m[1]); setMentionActive(0) }
+    else setMentionQuery(null)
+  }, [])
+
+  // Replace the active "@query" with "@<label>" and remember the chosen item
+  const pickMention = useCallback((item: Mentionable) => {
+    const ta = textareaRef.current
+    const caret = ta ? ta.selectionStart : input.length
+    const before = input.slice(0, caret)
+    const after = input.slice(caret)
+    const replaced = before.replace(/(^|\s)@([^\s@]*)$/, `$1@${item.label} `)
+    const next = replaced + after
+    setInput(next)
+    setChosen(prev => prev.some(c => c.id === item.id) ? prev : [...prev, item])
+    setMentionQuery(null)
+    requestAnimationFrame(() => {
+      if (!ta) return
+      const pos = replaced.length
+      ta.focus()
+      ta.setSelectionRange(pos, pos)
+    })
+  }, [input])
 
   function stop() {
     abortRef.current?.abort()

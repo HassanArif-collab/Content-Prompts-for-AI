@@ -11,18 +11,17 @@ import {
 } from '@/lib/studio-utils'
 import { InlineEditor } from '../InlineEditor'
 import { RichBlockEditor } from '../RichBlockEditor'
-import { SourceSidebar } from '../SourceSidebar'
 import type { Project, ScriptSection, Source } from '../project-workspace'
 
 // ─── Script tab — one continuous Notion-style writing surface ────
 // Each beat: a left-margin label (editable, free text) + a heading + the
 // rich block editor. No section cards, no header bars.
 
-export function ScriptTab({ project, onChange }: {
+export function ScriptTab({ project, onChange, onOpenSource }: {
   project: Project
   onChange: () => void
+  onOpenSource: (source: Source) => void
 }) {
-  const [activeSource, setActiveSource] = useState<Source | null>(null)
   const [expandingId, setExpandingId] = useState<string | null>(null)
   const [expandInstruction, setExpandInstruction] = useState('')
   const [expandResult, setExpandResult] = useState('')
@@ -40,9 +39,9 @@ export function ScriptTab({ project, onChange }: {
 
   const handleFootnoteClick = useCallback((num: number) => {
     const source = sources[num - 1]
-    if (source) setActiveSource(source)
+    if (source) onOpenSource(source)
     else toast.error('Source not found')
-  }, [sources])
+  }, [sources, onOpenSource])
 
   async function saveField(sectionId: string, field: string, value: string) {
     await fetch(`/api/projects/${project.id}/script/${sectionId}`, {
@@ -200,7 +199,26 @@ export function ScriptTab({ project, onChange }: {
         </div>
       )}
 
-      <SourceSidebar sources={sources} activeSource={activeSource} onClose={() => setActiveSource(null)} />
+      {/* Consolidated sources — numbered list at the very bottom of the script */}
+      {sources.length > 0 && (
+        <div className="mt-16 pt-8 border-t border-border">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-4">Sources</h2>
+          <ol className="space-y-1.5">
+            {sources.map((s, i) => (
+              <li key={s.id} className="grid grid-cols-[24px_1fr] gap-2 text-sm">
+                <span className="text-muted-foreground/60 tabular-nums text-right">{i + 1}</span>
+                <button
+                  onClick={() => onOpenSource(s)}
+                  className="text-left text-muted-foreground hover:text-foreground hover:underline underline-offset-2 leading-snug"
+                >
+                  {s.title || s.url || 'Untitled source'}
+                  {s.author && <span className="text-muted-foreground/60"> — {s.author}</span>}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   )
 }
