@@ -110,6 +110,8 @@ The user pastes their tunnel URL at the start of the session. It looks like:
     "note": ""
   },
   "highlight": false,
+  "aesthetic": "archival sepia, grainy 16mm",
+  "linkedSceneId": "",
   "narration": "Margit drew three hundred and twelve maps.",
   "asset": {
     "capability": "flow.nano_banana_2",
@@ -143,6 +145,14 @@ The `highlight` field marks shots where **visuals are playing on top of you** (t
 - `"highlight": false` — Standard shot, no overlay on presenter.
 
 This lets the storyboard distinguish between clean talking-head shots and shots with visual overlays on the presenter.
+
+### Storyboard link (`aesthetic` + `linkedSceneId`)
+
+Set `aesthetic` to a short art-direction tag (e.g. "archival sepia, grainy 16mm") and
+`linkedSceneId` to the matching storyboard scene's id from `GET /api/projects/<id>/scenes`
+(leave empty if there is no matching scene). The storyboard's Aesthetic and Presenter
+columns read from the shots linked this way, so the host's on-camera shots and the look
+of each scene show up automatically.
 
 ### Image & animation workflow (Dreamina is OFF)
 

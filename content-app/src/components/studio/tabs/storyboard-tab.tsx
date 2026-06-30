@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { InlineEditor } from '../InlineEditor'
@@ -53,6 +53,32 @@ export function StoryboardTab({ project, onChange }: {
     [project.scenes]
   )
 
+  // Join: presenter/aesthetic come from the linked visual-plan shots (v7 sets
+  // linkedSceneId), falling back to the inline description tag when unlinked.
+  const [sceneShots, setSceneShots] = useState<Record<string, { presenterAppears: boolean; aesthetic: string }[]>>({})
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/projects/${project.id}/visual-plans`)
+      .then(r => r.json())
+      .then((plans) => {
+        if (cancelled) return
+        const map: Record<string, { presenterAppears: boolean; aesthetic: string }[]> = {}
+        for (const plan of plans ?? []) {
+          let shots: Array<Record<string, unknown>> = []
+          try { shots = JSON.parse((plan.shotsJson as string) || '[]') } catch {}
+          for (const sh of shots) {
+            const sid = sh.linkedSceneId as string
+            if (!sid) continue
+            const presenter = sh.presenter as { appears?: boolean } | undefined
+            ;(map[sid] ??= []).push({ presenterAppears: !!presenter?.appears, aesthetic: (sh.aesthetic as string) || '' })
+          }
+        }
+        setSceneShots(map)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [project.id])
+
   const columns: NotionColumn[] = [
     { key: 'title', label: 'Scene', width: '200px' },
     { key: 'aesthetic', label: 'Aesthetic', width: '130px' },
@@ -65,9 +91,16 @@ export function StoryboardTab({ project, onChange }: {
   function getCellValue(scene: Scene, key: string): string {
     switch (key) {
       case 'title': return scene.title
-      case 'aesthetic': return readTag(scene, 'aesthetic')
+      case 'aesthetic': {
+        const fromShot = sceneShots[scene.id]?.find(s => s.aesthetic)?.aesthetic
+        return fromShot || readTag(scene, 'aesthetic')
+      }
       case 'visualStyle': return scene.shotType || ''
-      case 'presenter': return readTag(scene, 'presenter')
+      case 'presenter': {
+        const linked = sceneShots[scene.id]
+        if (linked && linked.length) return linked.some(s => s.presenterAppears) ? 'On camera' : 'VO only'
+        return readTag(scene, 'presenter')
+      }
       case 'duration': return formatRuntime(scene.duration / 60)
       case 'status': return SCENE_STATUSES.find(s => s.value === scene.status)?.label || scene.status
       default: return ''
