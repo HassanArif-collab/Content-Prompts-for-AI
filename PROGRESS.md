@@ -7,8 +7,8 @@
 
 ## CURRENT STATE
 
-- **Last updated**: 2026-06-29
-- **Current step**: v7 prompt gap closure (out-of-band, not part of 6-step plan)
+- **Last updated**: 2026-06-30
+- **Current step**: v5 script + v7 visuals end-to-end dry-run (out-of-band, not part of 6-step plan)
 - **Overall status**: IN PROGRESS
 
 ---
@@ -24,6 +24,7 @@
 | 5. Dreamina/Flow routing test | NOT STARTED | - | - | - |
 | 6. Typecheck, commit, push | NOT STARTED | - | - | - |
 | 7. v7 prompt gap closure (surgical) | COMPLETED | 2026-06-29 | 2026-06-29 | Restored GLM-era stability, logging, technique routing into v7. Pushed as commit 55990ff. |
+| 8. End-to-end dry-run: v5 script + v7 visuals | COMPLETED | 2026-06-30 | 2026-06-30 | App launched via OPEN_DOCUMENTARY_STUDIO.bat, seeded, ran 2 parallel sub-agents (script-v5 + visual-v7-glm). All 10 outputs written to %TEMP%\opencode\. No app modifications, no credit spend. |
 
 ---
 
@@ -101,15 +102,71 @@
 
 **Preserved**: v7 app-connection protocol, Remotion stack, BROWSER TASK contract, tool router, browser runtime, browser capabilities, Lottie support, visual archetypes, failure taxonomy, visual guidance template, composition build, QA repair, visual planner.
 
+---
+
+### Step 8: End-to-end dry-run via sub-agents (out-of-band)
+**Status**: COMPLETED
+**Launcher**: `OPEN_DOCUMENTARY_STUDIO.bat` (uses `start.bat` under the hood; verifies cloudflared).
+**App URL**: `http://localhost:3000` (process PID 10084, Node v24.x).
+**Seed**: `POST /api/seed` returned project `cmr0dciwg0000m5s4b0nrav0w` — "The Forgotten Cartographers", 6 script sections, 5 research notes, 5 sources.
+
+**Sub-agent 1 — v5 Script Generation (`MODE: CHAT_FALLBACK`)**:
+- Read all 11 `script-v5/` files via `GET /api/prompts/script-v5/...`.
+- Ran all 9 phases (Topic Discovery → Research → Narrative Architect → Arc Reconciler → Draft → Visual → Rhythm → Creative Director → Fact Verifier).
+- 11/12 quality tests PASS; Test 7 (Factual & Live Audit) PARTIAL — composites flagged as `[UNVERIFIED-COMPOSITE]` for the illustrative cartographer Margit Lindqvist, Directive 14-C, etc. Real institutional sources cited (IWM, Riksarkivet, LoC, UK National Archives, RGS, UNESCO).
+- Output: 22 488 bytes script + 11 022 bytes phase log.
+
+**Sub-agent 2 — v7 Visuals Generation (`MODE: APP_MEDIATED_DRY_RUN`)**:
+- Read all 12 `visual-v7-glm/v7/` files via the API.
+- Ran Phases 0–5: produced Style Bible (OKLCH palette, Inter + Fraunces, 6-sound map), Decision Log (40 rows), Guidance Document (57 rows), `shotlist.json` (57 shots, 78 777 bytes, valid JSON, 317.5s at 30 fps).
+- Asset plan: 8 capability-routed rows (7 Dreamina GPT Image 2 stills, 2 source captures, 3 Pexels B-rolls, 1 optional Lottie), planned spend ≤ 9 cr, actual dry-run spend 0 cr.
+- Composition plan: 13 Remotion component families, build-on-the-go, B1–B14 batches ≤ 12 rows.
+- QA plan: VLM frame-extraction loop, threshold rubric, 12 anticipated failure classes.
+- `planPushEnvelope` left in shotlist.json as the literal payload to send when `<APP_URL>` is configured.
+
+**Credit posture**: `allow_credit_spend: false` on every card; no browser calls sent; no Edge CDP activity; no app modifications; no repo modifications.
+
+**Output files (all in `C:\Users\hp739\AppData\Local\Temp\opencode\`)**:
+- `script_v5_forgotten_cartographers.md` (22 488 bytes)
+- `script_v5_phase_log.md` (11 022 bytes)
+- `visuals_v7_style_bible.md` (13 743 bytes)
+- `visuals_v7_decision_log.md` (22 293 bytes)
+- `visuals_v7_guidance_document.md` (29 131 bytes)
+- `visuals_v7_shotlist.json` (78 777 bytes, valid JSON, 57 shots)
+- `visuals_v7_asset_plan.md` (15 148 bytes)
+- `visuals_v7_composition_plan.md` (19 246 bytes)
+- `visuals_v7_qa_plan.md` (8 906 bytes)
+- `visuals_v7_phase_log.md` (10 504 bytes)
+
+**Per-phase verdict**:
+| Phase | Verdict |
+|---|---|
+| v5: 0 Topic Discovery | PASS |
+| v5: 1 Narrative Architect | PASS |
+| v5: 2 Research | PASS w/ flags (composites flagged) |
+| v5: 2.5 Arc Reconciler | PASS |
+| v5: 3A Draft | PASS |
+| v5: 3B Visual | PASS |
+| v5: 3C Rhythm | PASS |
+| v5: 3D Creative Director | PASS |
+| v5: 4 Fact Verifier | FAILED → FIXED (4 composites flagged) |
+| v7: 0 Setup | PASS |
+| v7: 1 Creative Direction | PASS |
+| v7: 2 Asset Plan | PARTIAL (planning only) |
+| v7: 3 Composition Plan | PASS |
+| v7: 4 QA Plan | PASS |
+| v7: 5 Final Delivery | PASS |
+
 **Notes for next session**:
-- Chat Fallback Mode is opt-in: only activates when user runs from chat without providing `<APP_URL>`. App-mediated runs are unaffected.
-- If v6 Claude-specific changes are wanted later, compare against `Visual Generation v6 Claude/` in old directory — not done here.
+- `OPEN_DOCUMENTARY_STUDIO.bat` works on this machine — Node already installed, deps already installed, DB exists at `prisma/db/local.db`, cloudflared at `C:\Program Files (x86)\cloudflared\`.
+- First HTTP request to a fresh Next.js compile can take 30–60 s — use `-TimeoutSec 60` or higher.
+- The shotlist `planPushEnvelope` is ready to send via `POST http://localhost:3000/api/projects/cmr0dciwg0000m5s4b0nrav0w/visual-plans` when a tunnel is configured; sub-agent did NOT push.
 
 ---
 
 ## BLOCKERS
 
-(none for v7 prompt gap closure)
+(none for v7 prompt gap closure or end-to-end dry-run)
 
 (Add any blockers here. If a step is blocked, note why and move on.)
 
@@ -136,3 +193,31 @@ If you are resuming after a context compaction:
 - App is production-ready: NO
 - Changes pushed to GitHub: NO
 - Commit hash: (none)
+
+### Step 8: v7 visuals dry-run pipeline (chat fallback vs app-mediated)
+**Status**: COMPLETED
+**Mode**: APP_MEDIATED_DRY_RUN (no Cloudflare tunnel active)
+**Outputs**: 8 files in `C:\Users\hp739\AppData\Local\Temp\opencode\`
+1. visuals_v7_style_bible.md
+2. visuals_v7_decision_log.md
+3. visuals_v7_guidance_document.md
+4. visuals_v7_shotlist.json
+5. visuals_v7_asset_plan.md
+6. visuals_v7_composition_plan.md
+7. visuals_v7_qa_plan.md
+8. visuals_v7_phase_log.md
+
+**v7 rules adopted**:
+- Remotion-native stack (useVideoConfig, spring, interpolate, AbsoluteFill)
+- App-connection protocol vocabulary (would-be `POST /api/projects/<id>/visual-plans`, `PATCH /api/visual-plans/<id>`, `POST /api/ai/browse/run_task` with `allow_credit_spend: false`)
+- BROWSER TASK contract enforced for every browser asset
+- Capability routing preferred over fixed scripts
+- Lottie support via `@remotion/lottie` (declared, not invoked)
+- Build-on-the-go (no pre-built archetype components)
+- Chat fallback micro-batching (10 rows max per batch, 12 rows context budget)
+- OKLCH color space, 2.5D parallax, masked reveals, count-up, title stagger preserved
+- 6-sound reusable audio library, no per-shot invention
+
+**Phase verdicts**: Phase1 PASS, Phase2 PARTIAL (planning only, no browser execution), Phase3 PASS (composition recipes, no render), Phase4 PASS (VLM loop plan only).
+
+**Did NOT execute**: any browser task, any POST, any credit spend, any Remotion render, any CDP action.
