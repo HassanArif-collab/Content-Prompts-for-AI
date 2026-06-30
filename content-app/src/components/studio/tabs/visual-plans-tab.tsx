@@ -214,6 +214,21 @@ function PlanInline({ plan, onRefresh, onChange, projectId, selectedPlan, setSel
     await updatePlan({ shotsJson: JSON.stringify(newShots) })
   }
 
+  async function attachAsset(shotIndex: number, filePath: string, kind: 'image' | 'video') {
+    const newShots = [...shots]
+    newShots[shotIndex] = {
+      ...newShots[shotIndex],
+      asset: {
+        ...(newShots[shotIndex].asset || {}),
+        path: filePath,
+        capability: kind === 'video' ? 'upload.video' : 'upload.image',
+        status: 'ready',
+      },
+    }
+    await updatePlan({ shotsJson: JSON.stringify(newShots) })
+    toast.success('Asset attached')
+  }
+
   async function requestChanges() {
     if (!feedbackInput.trim()) return
     setActing(true)
@@ -283,6 +298,7 @@ function PlanInline({ plan, onRefresh, onChange, projectId, selectedPlan, setSel
             rendering={renderingShot === `${plan.id}-${i}`}
             previewImage={plan.remotionPreview}
             remotionCode={plan.remotionCode}
+            onAttachAsset={(p, k) => attachAsset(i, p, k)}
           />
         ))}
       </div>

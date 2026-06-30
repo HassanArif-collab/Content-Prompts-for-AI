@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, Image as ImageIcon, Video, Loader2, Copy, Check } from 'lucide-react'
+import { Play, Image as ImageIcon, Video, Loader2, Copy, Check, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface PipelineStep { step: string; tool: string; prompt: string; note?: string }
@@ -19,6 +19,8 @@ interface AssetDockProps {
   assetStatus?: 'pending' | 'generating' | 'ready' | 'failed'
   // How this shot's asset gets made (image → animate → edit), shown to the user
   pipeline?: PipelineStep[]
+  // Attach a manually-generated asset (upload) to this shot
+  onAttached?: (filePath: string, kind: 'image' | 'video') => void
   // Shot info
   shotId: string
   shotArchetype: string
@@ -28,10 +30,30 @@ const STEP_LABEL: Record<string, string> = {
   image: 'Image', image_final: 'Final image', animate: 'Animate', edit: 'Edit',
 }
 
-export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, assetStatus, pipeline, shotId, shotArchetype }: AssetDockProps) {
+export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, assetStatus, pipeline, onAttached, shotId, shotArchetype }: AssetDockProps) {
   const [playing, setPlaying] = useState(false)
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [copied, setCopied] = useState<number | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      const res = await fetch('/api/assets/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.ok) onAttached?.(data.path, data.kind)
+      else toast.error(data.error || 'Upload failed')
+    } catch {
+      toast.error('Upload failed')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
 
   const hasAnimation = !!animationCode
   const hasImage = !!imageBase64 || !!imageUrl
@@ -49,6 +71,15 @@ export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, ass
       </div>
 
       <div className="p-3 space-y-3">
+        {/* Attach a manually-generated asset (copy prompt → Flow/ChatGPT → drop the file here) */}
+        {onAttached && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer rounded-md border border-dashed border-border/60 px-3 py-2 hover:bg-accent">
+            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {uploading ? 'Uploading…' : 'Attach image or video'}
+            <input type="file" accept="image/*,video/mp4,video/webm" className="hidden" disabled={uploading} onChange={handleUpload} />
+          </label>
+        )}
+
         {/* Generation pipeline — how this shot's visual gets made */}
         {pipeline && pipeline.length > 0 && (
           <div className="space-y-1.5">

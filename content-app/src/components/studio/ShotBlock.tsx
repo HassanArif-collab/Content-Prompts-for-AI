@@ -35,6 +35,7 @@ interface ShotBlockProps {
   rendering?: boolean
   previewImage?: string
   remotionCode?: string
+  onAttachAsset?: (filePath: string, kind: 'image' | 'video') => void
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -47,10 +48,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export function ShotBlock({
-  shot, index, onUpdate, onRenderPreview, rendering, previewImage, remotionCode,
+  shot, index, onUpdate, onRenderPreview, rendering, previewImage, remotionCode, onAttachAsset,
 }: ShotBlockProps) {
   const [codeCopied, setCodeCopied] = useState(false)
   const [showCode, setShowCode] = useState(false)
+  const assetPath = shot.asset?.path || ''
+  const assetIsVideo = /\.(mp4|webm)$/i.test(assetPath)
+  const assetIsImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(assetPath)
 
   async function copyCode() {
     if (!remotionCode) return
@@ -84,9 +88,11 @@ export function ShotBlock({
         <AssetDock
           animationCode={remotionCode}
           imageBase64={previewImage}
-          videoPath={shot.asset?.path}
+          imageUrl={assetIsImage ? `/api/assets/${assetPath}` : undefined}
+          videoPath={assetIsVideo ? assetPath : undefined}
           assetStatus={shot.asset?.status as 'pending' | 'generating' | 'ready' | 'failed' | undefined}
           pipeline={shot.pipeline}
+          onAttached={onAttachAsset}
           shotId={shot.id}
           shotArchetype={shot.archetype}
         />

@@ -171,6 +171,25 @@ Put the real prompts in the shot's `pipeline` array so the app shows the full ch
 Set `asset.capability` to `flow.nano_banana_2` (image) or `flow.video` (animation) —
 never a `dreamina.*` capability for now.
 
+### Motion technique & intent (Vox-style toolbox — choose, don't copy)
+
+You have freedom to pick, per shot, whichever of these serves the beat — or combine them:
+
+- **Layered scene** — build the shot as background + mid-ground + foreground. Often keep the
+  background locked/shared across a run of shots so it reads as one continuous shot; animate
+  elements *into* the frame rather than moving the whole frame. Put the layer image prompts in
+  `pipeline` and describe the entrance in `motion`.
+- **Parallax (2.5D)** — for a still with depth (clear fg/mid/bg), separate the layers and move
+  the camera slowly (dolly/pan) so a photo feels like video. Note it in `motion`
+  (e.g. "slow push-in, foreground drifts faster than background").
+- **Animate with intent** — every move serves the narration. Stagger entrances, don't move
+  everything at once; a few purposeful moves beat busy motion. Match easing and pace to the
+  beat's emotion (urgent vs. somber). Signature touches (an offset marker stroke behind a
+  cutout, a counter ticking up) are fine in moderation.
+
+Per shot, choose the lane that fits: layered scene, parallax still, coded motion-graphic
+(Remotion), AI image, or AI video — and record the choice in `motion` + `pipeline`.
+
 ### Browser task JSON shape
 
 ```json
