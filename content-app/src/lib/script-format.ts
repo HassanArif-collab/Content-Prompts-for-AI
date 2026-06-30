@@ -14,9 +14,19 @@ export interface ParsedSegment {
   footnoteNum?: number
 }
 
+// Map superscript footnote digits (the v5 prompt writes "[¹]") to a number, so
+// the app links footnotes whether the AI emits "[1]" (ascii) or "[¹]".
+const SUPERSCRIPT: Record<string, string> = {
+  '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4',
+  '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9',
+}
+function superToNum(s: string): number {
+  return parseInt([...s].map((c) => SUPERSCRIPT[c] ?? '').join(''), 10)
+}
+
 export function parseScriptContent(text: string): ParsedSegment[] {
   const segments: ParsedSegment[] = []
-  const regex = /\[HIGHLIGHT\]([\s\S]*?)\[\/HIGHLIGHT\]|\[(\d+)\]/gi
+  const regex = /\[HIGHLIGHT\]([\s\S]*?)\[\/HIGHLIGHT\]|\[(\d+)\]|\[([⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]/gi
   let lastIndex = 0
   let match: RegExpExecArray | null
   while ((match = regex.exec(text)) !== null) {
@@ -27,6 +37,8 @@ export function parseScriptContent(text: string): ParsedSegment[] {
       segments.push({ type: 'highlight', content: match[1] })
     } else if (match[2] !== undefined) {
       segments.push({ type: 'footnote', content: match[0], footnoteNum: parseInt(match[2]) })
+    } else if (match[3] !== undefined) {
+      segments.push({ type: 'footnote', content: match[0], footnoteNum: superToNum(match[3]) })
     }
     lastIndex = regex.lastIndex
   }
