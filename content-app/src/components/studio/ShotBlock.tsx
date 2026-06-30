@@ -22,6 +22,9 @@ interface Shot {
     status?: string
     path?: string
   }
+  pipeline?: { step: string; tool: string; prompt: string; note?: string }[]
+  presenter?: { appears?: boolean; note?: string }
+  highlight?: boolean
 }
 
 interface ShotBlockProps {
@@ -70,6 +73,8 @@ export function ShotBlock({
         <span className="text-xs text-muted-foreground tabular-nums font-mono">SHOT {String(index + 1).padStart(2, '0')}</span>
         <Badge variant="outline" className="text-[10px] uppercase">{shot.archetype}</Badge>
         <span className="text-xs text-muted-foreground tabular-nums">{shot.duration}s</span>
+        {shot.presenter?.appears && <Badge variant="outline" className="text-[10px] uppercase">Presenter</Badge>}
+        {shot.highlight && <Badge variant="outline" className="text-[10px] uppercase">Overlay</Badge>}
         <div className="flex-1" />
         {status && <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusClass}`}>{status}</span>}
       </div>
@@ -81,6 +86,7 @@ export function ShotBlock({
           imageBase64={previewImage}
           videoPath={shot.asset?.path}
           assetStatus={shot.asset?.status as 'pending' | 'generating' | 'ready' | 'failed' | undefined}
+          pipeline={shot.pipeline}
           shotId={shot.id}
           shotArchetype={shot.archetype}
         />

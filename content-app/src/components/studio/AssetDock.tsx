@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, Image as ImageIcon, Video, Loader2, Download } from 'lucide-react'
+import { Play, Image as ImageIcon, Video, Loader2, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
+
+interface PipelineStep { step: string; tool: string; prompt: string; note?: string }
 
 interface AssetDockProps {
   // For live animations (Remotion/HTML/GSAP code)
@@ -15,14 +17,21 @@ interface AssetDockProps {
   videoPath?: string
   // Asset status
   assetStatus?: 'pending' | 'generating' | 'ready' | 'failed'
+  // How this shot's asset gets made (image → animate → edit), shown to the user
+  pipeline?: PipelineStep[]
   // Shot info
   shotId: string
   shotArchetype: string
 }
 
-export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, assetStatus, shotId, shotArchetype }: AssetDockProps) {
+const STEP_LABEL: Record<string, string> = {
+  image: 'Image', image_final: 'Final image', animate: 'Animate', edit: 'Edit',
+}
+
+export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, assetStatus, pipeline, shotId, shotArchetype }: AssetDockProps) {
   const [playing, setPlaying] = useState(false)
   const [iframeLoaded, setIframeLoaded] = useState(false)
+  const [copied, setCopied] = useState<number | null>(null)
 
   const hasAnimation = !!animationCode
   const hasImage = !!imageBase64 || !!imageUrl
@@ -40,6 +49,30 @@ export function AssetDock({ animationCode, imageBase64, imageUrl, videoPath, ass
       </div>
 
       <div className="p-3 space-y-3">
+        {/* Generation pipeline — how this shot's visual gets made */}
+        {pipeline && pipeline.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Generation pipeline</div>
+            {pipeline.map((p, i) => (
+              <div key={i} className="rounded-md border border-border/60 bg-background p-2.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-foreground">{STEP_LABEL[p.step] ?? p.step}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{p.tool}</span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(p.prompt); setCopied(i); setTimeout(() => setCopied(null), 1500) }}
+                    className="ml-auto p-1 rounded hover:bg-muted text-muted-foreground"
+                    title="Copy prompt" aria-label="Copy prompt"
+                  >
+                    {copied === i ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+                <p className="text-xs text-foreground/80 whitespace-pre-wrap">{p.prompt}</p>
+                {p.note && <p className="text-[11px] text-muted-foreground mt-1 italic">{p.note}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Live animation (HTML/GSAP in iframe) */}
         {hasAnimation && (
           <div>

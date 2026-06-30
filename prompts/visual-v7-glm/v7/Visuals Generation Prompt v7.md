@@ -112,13 +112,19 @@ The user pastes their tunnel URL at the start of the session. It looks like:
   "highlight": false,
   "narration": "Margit drew three hundred and twelve maps.",
   "asset": {
-    "capability": "dreamina.still_image",
-    "prompt": "Editorial 16:9 background...",
+    "capability": "flow.nano_banana_2",
     "status": "pending",
     "path": ""
-  }
+  },
+  "pipeline": [
+    { "step": "image", "tool": "Flow (Nano Banana 2)", "prompt": "Full image-generation prompt for the free test render", "note": "judge composition + direction first" },
+    { "step": "image_final", "tool": "ChatGPT", "prompt": "Same prompt — only run if the user approves this composition", "note": "or keep the Nano Banana result" },
+    { "step": "animate", "tool": "Flow", "prompt": "How the still becomes motion — camera move, timing, what changes", "note": "" }
+  ]
 }
 ```
+
+The `pipeline` array is what the app renders so the user can see, per shot, **exactly which prompt makes the image, which prompt animates it in Flow, and any edit steps**. Each step: `step` (image | image_final | animate | edit), `tool`, `prompt`, optional `note`. Add an `edit` step whenever a part of the clip is re-fed into Flow to change something, e.g. `{ "step": "edit", "tool": "Flow", "prompt": "Re-render seconds 3–5 with the title removed", "note": "" }`.
 
 ### Presenter field
 
@@ -137,6 +143,23 @@ The `highlight` field marks shots where **visuals are playing on top of you** (t
 - `"highlight": false` — Standard shot, no overlay on presenter.
 
 This lets the storyboard distinguish between clean talking-head shots and shots with visual overlays on the presenter.
+
+### Image & animation workflow (Dreamina is OFF)
+
+**Dreamina is currently unavailable — do NOT use it.** Keep the Dreamina know-how
+for later, but route every asset through this pipeline instead:
+
+1. **Test image — Flow (Nano Banana 2), free.** Generate the image in Flow so the user
+   can judge composition and art direction at no cost. This is the default `image` step.
+2. **User reviews in the app** and either: **approves** → optionally re-run the *same*
+   prompt in **ChatGPT** for the final (`image_final`), or just keep the Nano Banana
+   result; **or gives feedback** → revise the prompt and regenerate in Nano Banana 2.
+3. **Animate — Flow.** The approved still is animated in Flow (`animate` step).
+4. **Edits — Flow.** Any fix to part of the clip is a new `edit` step with its own prompt.
+
+Put the real prompts in the shot's `pipeline` array so the app shows the full chain.
+Set `asset.capability` to `flow.nano_banana_2` (image) or `flow.video` (animation) —
+never a `dreamina.*` capability for now.
 
 ### Browser task JSON shape
 
