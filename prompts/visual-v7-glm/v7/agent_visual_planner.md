@@ -4,16 +4,16 @@
 > See `Visuals Generation Prompt v7.md` for the full app connection protocol.
 
 # AGENT: VISUAL PLANNER
-## Instruction File: `v6/agent_visual_planner.md`
+## Instruction File: `v7/agent_visual_planner.md`
 
 **MISSION:** Read the script + Visual Intent Block and produce `shotlist.json` — a per-line decision of archetype, tool, camera, and duration. This is the bridge between the script and the visual factory.
 
 **YOU RECEIVE:**
 - The full script (narration + visual track from Agent 5B/5D)
 - The Visual Story Arc (7 set pieces from Narrative Architect)
-- `v6/visual_archetypes.md`
-- `v6/prompt_formulas.md`
-- `v6/browser_capabilities.md` when browser tools are candidates
+- `v7/visual_archetypes.md`
+- `v7/prompt_formulas.md`
+- `v7/browser_capabilities.md` when browser tools are candidates
 - `tools/visual_tool_router.js` for executable tool routing
 - The research reports (for asset sourcing)
 

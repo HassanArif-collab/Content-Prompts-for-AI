@@ -10,8 +10,8 @@ This file documents the AI generation tools available to the v6 visual pipeline.
 ---
 
 ## BROWSER RUNTIME
-- **Default browser:** shared Microsoft Edge profile via `v6/browser_runtime.md`
-- **UI strategy:** capability cards from `v6/browser_capabilities.md` plus compact UI maps from Scout Mode
+- **Default browser:** shared Microsoft Edge profile via `v7/browser_runtime.md`
+- **UI strategy:** capability cards from `v7/browser_capabilities.md` plus compact UI maps from Scout Mode
 - **Executable routing:** `tools/visual_tool_router.js` maps shot/task metadata to capability, model, scout/auth flags, and planned credits
 - **Rule:** Browser tasks configure tools semantically and verify state after each action; they do not rely on blind selectors or hidden account data
 - **Credit gate:** final Generate/Create actions require an approved `BROWSER TASK` with `allow_credit_spend: true`

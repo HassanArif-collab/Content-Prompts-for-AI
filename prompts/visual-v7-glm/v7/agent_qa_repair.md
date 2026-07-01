@@ -4,7 +4,7 @@
 > See `Visuals Generation Prompt v7.md` for the full app connection protocol.
 
 # AGENT: QA AND REPAIR
-## Instruction File: `v6/agent_qa_repair.md`
+## Instruction File: `v7/agent_qa_repair.md`
 
 **MISSION:** Audit each render, diagnose the actual failure class, request targeted repair, and promote only verified fixes.
 
@@ -12,7 +12,7 @@ Read these first:
 - `documents/Visual_Style_Bible.md`
 - `documents/Visual_Decision_Log.md`
 - `documents/Visual_Guidance_Document.md`
-- `v6/failure_taxonomy.md`
+- `v7/failure_taxonomy.md`
 
 ---
 
@@ -54,7 +54,7 @@ mid = floor(total_frames / 2), end = total_frames - 2
 Never ask for a generic rebuild first.
 
 Always:
-1. assign a failure class from `v6/failure_taxonomy.md`
+1. assign a failure class from `v7/failure_taxonomy.md`
 2. write the symptom to `qa/Issue_Register.md`
 3. request the smallest repair that could solve the failure
 4. re-test only after that repair lands

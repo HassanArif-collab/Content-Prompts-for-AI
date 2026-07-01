@@ -4,7 +4,7 @@
 > See `Visuals Generation Prompt v7.md` for the full app connection protocol.
 
 # AGENT: COMPOSITION BUILD — v6 for Claude
-## Instruction File: `v6/agent_composition_build.md`
+## Instruction File: `v7/agent_composition_build.md`
 
 **MISSION:** Build each planned visual as a disciplined Remotion component on the go, render using the Remotion pipeline, attach audio via Remotion `<Audio>` components, and hand verified renders to QA.
 
@@ -13,8 +13,8 @@ Read these first (and ONLY these — context budget discipline applies):
 - `documents/Visual_Decision_Log.md`
 - `documents/Visual_Guidance_Document.md`
 - `remotion/src/shotlist.json`
-- `v6/visual_archetypes.md`
-- `v6/failure_taxonomy.md`
+- `v7/visual_archetypes.md`
+- `v7/failure_taxonomy.md`
 
 ---
 
@@ -55,7 +55,7 @@ For each row in `shotlist.json`, in strict order:
 
 1. Read the matching row from shotlist.json + Decision Log + Guidance Document
 2. Emit the **Shot Spec** (all fields must be filled)
-3. Read the relevant archetype section in `v6/visual_archetypes.md`
+3. Read the relevant archetype section in `v7/visual_archetypes.md`
 4. Build the Remotion component (create new file in `remotion/src/components/{id}.tsx`)
 5. Register the component in `remotion/src/index.tsx`
 6. Add `<Audio>` tags for the archetype's mapped sound
@@ -141,7 +141,7 @@ Replace every `[VALUE]`, `[HEADLINE]`, or example number before render.
 - One node focal at a time. Arrows show causation, not connection.
 
 ### SCREENSHOT_HIGHLIGHT / DOC_HIGHLIGHT (ArticleDoc)
-- See `v6/template_doc_highlight.md` for the ArticleDoc component spec.
+- See `v7/template_doc_highlight.md` for the ArticleDoc component spec.
 - Aged-paper or documentary texture base — never clean white.
 - Publication logo outside zoom and perspective wrappers.
 - Source content MUST come from a real screenshot.

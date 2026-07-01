@@ -4,7 +4,7 @@
 > See `Visuals Generation Prompt v7.md` for the full app connection protocol.
 
 # AGENT: ASSET GENERATION
-## Instruction File: `v6/agent_asset_generation.md`
+## Instruction File: `v7/agent_asset_generation.md`
 
 **MISSION:** Generate or capture only the assets needed by the approved planning documents.
 
@@ -18,10 +18,10 @@ Read these first:
 - `documents/Visual_Style_Bible.md`
 - `documents/Visual_Decision_Log.md`
 - `documents/Visual_Guidance_Document.md`
-- `v6/prompt_formulas.md`
-- `v6/visual_archetypes.md`
-- `v6/browser_runtime.md`
-- `v6/browser_capabilities.md`
+- `v7/prompt_formulas.md`
+- `v7/visual_archetypes.md`
+- `v7/browser_runtime.md`
+- `v7/browser_capabilities.md`
 - `tools/visual_tool_router.js` when turning shot metadata into a `BROWSER TASK`
 
 ---
@@ -55,7 +55,7 @@ Agents may dry-run configure a browser tool into a ready-to-generate state. They
 
 Use `tools/visual_tool_router.js` to create or validate the `capability`, model, auth/scout flags, and planned credits whenever the shot metadata is available.
 
-If a required control is missing, enter Scout Mode from `v6/browser_runtime.md`; do not guess through coordinate clicks.
+If a required control is missing, enter Scout Mode from `v7/browser_runtime.md`; do not guess through coordinate clicks.
 
 Current UI cautions from logged-in scout:
 - Dreamina defaults to `AI Agent`. A Dreamina task is not ready unless the prompt chip visibly confirms `AI Image` or `AI Video` as required. If it remains `AI Agent`, stop with `LOW_CONFIDENCE_UI`.
@@ -89,7 +89,7 @@ Generate still images only for: `GSAP_METAPHOR`, `EMOTIONAL_MOMENT`, fallback do
 Requirements: no readable text, no fake watermark, no fake logo, one clear focal concept, negative space preserved for overlay text.
 
 **Tool:** `BROWSER TASK` capability `dreamina.still_image` using shared Edge and the current UI map.
-**Prompt:** Build using IMAGE PROMPT FORMULA from `v6/prompt_formulas.md`
+**Prompt:** Build using IMAGE PROMPT FORMULA from `v7/prompt_formulas.md`
 **State gate:** Continue only when Dreamina confirms GPT Image 2 / ChatGPT Image 2 in the `AI Image` model menu and the bottom chips show `AI Image`, `GPT Image 2`, and `16:9`. AI Agent is not a GPT Image 2 route. Stop with `LOW_CONFIDENCE_UI` if the model/aspect cannot be confirmed.
 **Credit gate:** Log the active cost from the bottom prompt controls, not from older generation-history text.
 **Retry:** If text artifacts appear, regenerate once. If still fails, log `REGEN_FAILED` and switch to fallback.

@@ -4,18 +4,18 @@
 > See `Visuals Generation Prompt v7.md` for the full app connection protocol.
 
 # AGENT: CREATIVE DIRECTION
-## Instruction File: `v6/agent_creative_direction.md`
+## Instruction File: `v7/agent_creative_direction.md`
 
 **MISSION:** Turn the script into a decision-complete visual plan before any asset generation begins.
 
 Read these first:
 - `documents/script.md` or the supplied script file
 - `documents/research.md` or the supplied research file
-- `v6/visual_archetypes.md`
-- `v6/prompt_formulas.md`
-- `v6/visual_guidance_document_template.md`
-- `v6/failure_taxonomy.md`
-- `v6/agent_visual_planner.md` (for shotlist output)
+- `v7/visual_archetypes.md`
+- `v7/prompt_formulas.md`
+- `v7/visual_guidance_document_template.md`
+- `v7/failure_taxonomy.md`
+- `v7/agent_visual_planner.md` (for shotlist output)
 
 ---
 
@@ -38,7 +38,7 @@ Turn the script into a numbered line inventory.
 - Story job: hook, context, reveal, proof, mechanism, consequence, reflection, transition
 - Content type: stat, comparison, system, abstract idea, person, institution, document, timeline, emotional beat, b-roll cue
 - Complexity tier: `TIER 1`, `TIER 2`, or `TIER 3`
-- Best-fit archetype from `v6/visual_archetypes.md`
+- Best-fit archetype from `v7/visual_archetypes.md`
 - Primary insight: the one thing the viewer must grasp
 
 ### Extract and catalog:
@@ -56,7 +56,7 @@ Turn the script into a numbered line inventory.
 ---
 
 ### Visual Technique and Narrative Purpose
-For every beat, defer the per-line Visual Technique + Narrative Purpose assignment to `v6/agent_visual_planner.md` (which produces `shotlist.json`). Creative Direction only sets the **global** technique palette and beat-type guidance in `documents/Visual_Style_Bible.md`. The planner assigns the per-line technique based on that palette.
+For every beat, defer the per-line Visual Technique + Narrative Purpose assignment to `v7/agent_visual_planner.md` (which produces `shotlist.json`). Creative Direction only sets the **global** technique palette and beat-type guidance in `documents/Visual_Style_Bible.md`. The planner assigns the per-line technique based on that palette.
 
 ---
 
@@ -97,7 +97,7 @@ Write `documents/Visual_Decision_Log.md`:
 | # | Script Element | Story Job | Archetype | Tier | Primary Insight | Assets Needed | Duration Band | Motion Intent | QA Focus | Status |
 |---|---|---|---|---|---|---|---|---|---|---|
 
-One row per script beat. Duration bands from `v6/visual_archetypes.md`. Status starts as `PLANNED`.
+One row per script beat. Duration bands from `v7/visual_archetypes.md`. Status starts as `PLANNED`.
 
 Rules:
 - `Motion Intent` must say what the motion means, not just what moves. (e.g., "growing separation" not "slide in from left")
@@ -116,7 +116,7 @@ Write `documents/Visual_Guidance_Document.md` using the template. Must:
 ---
 
 ## PLANNER HANDOFF
-After creating planning documents, run the Visual Planner (`v6/agent_visual_planner.md`) to produce `remotion/src/shotlist.json`.
+After creating planning documents, run the Visual Planner (`v7/agent_visual_planner.md`) to produce `remotion/src/shotlist.json`.
 
 ---
 
