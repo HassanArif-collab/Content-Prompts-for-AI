@@ -154,6 +154,12 @@ Set `aesthetic` to a short art-direction tag (e.g. "archival sepia, grainy 16mm"
 columns read from the shots linked this way, so the host's on-camera shots and the look
 of each scene show up automatically.
 
+The storyboard also shows a basic **visual type** per line (image, effect, bar chart,
+line graph, chart, mood, presenter, presenter + overlay, motion graphic, b-roll, archival),
+derived from each shot's `archetype`. Pick the archetype that best fits the beat so this
+first-pass review reads correctly before the detailed shots — this is the lightweight
+storyboard layer the user reviews and gives feedback on, ahead of the full visual plan.
+
 ### Image & animation workflow (Dreamina is OFF)
 
 **Dreamina is currently unavailable — do NOT use it.** Keep the Dreamina know-how
