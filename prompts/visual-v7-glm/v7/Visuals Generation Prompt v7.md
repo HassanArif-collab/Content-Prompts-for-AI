@@ -33,8 +33,12 @@ If any of these are unclear, stop and read the relevant v6 support files before 
 USER (in ZAI chat)
   ↓ "Generate visual plan for [project]"
 YOU (the GLM chat AI — the brain)
-  ↓ 1. Fetch current script: GET <APP_URL>/api/projects/<projectId>/script
-  ↓    (always fetch fresh — user may have edited in the app)
+  ↓ 0. Find the project: GET <APP_URL>/api/projects → note its `id`
+  ↓ 1. Fetch fresh from the app (the user may have edited or added things):
+  ↓    GET <APP_URL>/api/projects/<projectId>/script    (script sections + inline [N] footnotes)
+  ↓    GET <APP_URL>/api/projects/<projectId>/research  (research notes + child links)
+  ↓    GET <APP_URL>/api/projects/<projectId>/sources   (sources — the URLs behind each [N])
+  ↓    Ground every shot in this script + research + sources, not just the script.
   ↓ 2. Read these prompt files via the app's API:
   ↓    GET <APP_URL>/api/prompts/visual-v7-glm/<filename>
   ↓ 3. Plan shots — one per script line, with archetype + duration + asset needs
@@ -70,7 +74,10 @@ The user pastes their tunnel URL at the start of the session. It looks like:
 
 | Endpoint | Method | Purpose |
 |---|---|---|
+| `/api/projects` | GET | List projects → get the project `id` |
 | `/api/projects/<id>/script` | GET | Fetch current script sections (always fresh) |
+| `/api/projects/<id>/research` | GET | Fetch research notes + links the user added |
+| `/api/projects/<id>/sources` | GET | Fetch sources with URLs (the footnote links) |
 | `/api/projects/<id>/visual-plans` | GET | List existing plans |
 | `/api/projects/<id>/visual-plans` | POST | Create a new plan |
 | `/api/visual-plans/<planId>` | GET | Read a specific plan |
