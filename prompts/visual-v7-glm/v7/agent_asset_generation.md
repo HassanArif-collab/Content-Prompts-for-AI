@@ -8,6 +8,12 @@
 
 **MISSION:** Generate or capture only the assets needed by the approved planning documents.
 
+> **STATUS — Dreamina is OFF.** Do not run any `dreamina.*` capability for now. Active generation =
+> **Flow** (Nano Banana 2 for stills, frames/ingredients for motion) and **ChatGPT image**, produced
+> by the user: the app shows each shot's prompt, the user generates in Flow/ChatGPT and drops the file
+> in the visuals folder, and the app auto-links it. The Dreamina steps below are kept for reference —
+> indexed in `v7/dreamina/README.md` — for when Dreamina credits return.
+
 Read these first:
 - `documents/Visual_Style_Bible.md`
 - `documents/Visual_Decision_Log.md`

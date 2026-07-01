@@ -78,7 +78,7 @@ generously and in citation order — they are the user's way into the sources.
 **Every [N] in the script MUST map to a source pushed to /sources.** No orphan references.
 
 API base: `<APP_URL>` (the tunnel URL, e.g. `https://random-words.trycloudflare.com`)
-Project ID: fetched from `GET <APP_URL>/api/projects`
+Project: **create it first** with `POST <APP_URL>/api/projects { "title": "<documentary title>", "logline": "<one-line pitch>", "targetRuntime": <minutes> }` → use the returned `id` for every push below. (To reuse an existing project instead, `GET <APP_URL>/api/projects` and pick its `id`.)
 
 ## ════════════════════════════════════════════════
 ## PHASE FLOW — 10-AGENT PIPELINE
@@ -269,7 +269,7 @@ After generating the final script + research, push them to the Documentary Studi
 ### Prerequisites
 - The user gives you a tunnel URL (e.g. `https://random-words.trycloudflare.com`)
 - Store as `<APP_URL>` for all requests below
-- Get the project ID: `GET <APP_URL>/api/projects` → pick the project, note its `id`
+- Create the project: `POST <APP_URL>/api/projects` with `{ "title": "<documentary title>", "logline": "<one-line pitch>", "targetRuntime": <minutes> }` → note the returned `id`. (To reuse an existing project, `GET <APP_URL>/api/projects` and pick its `id`.)
 
 ### 1. Push research as hierarchical topics + child links
 

@@ -54,10 +54,11 @@ YOU
   ↓ Loop until user clicks "Approve" (status → "approved")
   ↓ Generate Remotion component code for each shot
   ↓ Push code: PATCH <APP_URL>/api/visual-plans/<planId> { remotionCode: "..." }
-  ↓ For browser assets: POST <APP_URL>/api/ai/browse/run_task
-  ↓    { capability: "dreamina.still_image", url, inputs, allow_credit_spend: false }
-  ↓    App spawns tools/browser/browser_task.js → drives user's Edge → returns result
+  ↓ For each shot's asset: the app shows the shot's image/animation prompt (the pipeline).
+  ↓    Generate it in Flow (Nano Banana 2 for stills) or ChatGPT (image), animate in Flow,
+  ↓    then drop the file in the visuals folder → the app auto-links it to the shot.
   ↓ Update plan with asset paths
+  ↓    (Dreamina automation is archived — see v7/dreamina/README.md. Off for now.)
 USER
   ↓ Sees Remotion code + preview in plan detail
   ↓ Can give feedback even after visuals are created → loop
